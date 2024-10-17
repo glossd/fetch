@@ -1,0 +1,18 @@
+<svg fill="none" viewBox="0 0 500 100" width="500" height="100" xmlns="http://www.w3.org/2000/svg">
+    <foreignObject width="100%" height="100%">
+        <div xmlns="http://www.w3.org/1999/xhtml">
+            <style>
+                h1 {
+                    font-family: Arial, sans-serif;
+                    font-size: 40px;
+                    font-style: italic;
+                    font-weight: bold;
+                    color: #00AEEF;
+                    position: relative;
+                    display: inline-block;
+                }
+            </style>
+            <h1>FETCH</h1>
+        </div>
+    </foreignObject>
+</svg>

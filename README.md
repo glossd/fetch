@@ -1,19 +1,11 @@
-<div style="text-align: center; width: 100%;">
-<p style="font-family: Arial, sans-serif;
-            font-size: 40px;
-            font-style: italic;
-            font-weight: bold;
-            color: #00AEEF;
-            position: relative;
-            display: inline-block;">
-FETCH
-</p>
+<div align="center">
+    <img src=".github/fetch.svg" width="600" alt="FETCH">
 </div>
-<div style="text-align: center;">Simple Go http client. Inspired by axios library and JSON handling in JS. Improved with generics.</div>  
+<div align="center">Simple Go http client. Inspired by axios library and JSON handling in JS. Improved with generics.</div>  
 
 ## Reasons
-1. I was tired off using `json` tags for each field. This package de-capitalizes the public fields in JSON parsing, unless the `json` tag is specified.
-2. I always forget all the boilerplate code to make an HTTP request. This package provides a simple one function call approach.
+1. I was tired of using `json` tags for each field. This package de-capitalizes the public fields in JSON parsing unless the `json` tag is specified.
+2. I always forget all the boilerplate code to make an HTTP request. This package provides a simple one-function call approach.
 
 
 ## Installing
@@ -25,7 +17,7 @@ go get github.com/glossd/fetch
 ## Structure
 Functions of the `fetch` package match HTTP methods. Each function is generic and its generic type is the response. 
 
-<p style="text-align:center;">fetch.<b style="color: #6eedf3">Method</b>[<b style="color: #a2ff00">ResponseType</b>](<i>url string</i>, ...) returns <b style="color: #a2ff00">ResponseType</b></p>
+<div align="center">fetch.<b>Method</b>[<b>ResponseType</b>](<i>url string</i>, ...) returns <b>ResponseType</b></div>
 
 ## Examples
 

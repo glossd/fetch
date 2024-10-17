@@ -1,6 +1,6 @@
 *.test
 *.out
-.cmd/
+cmd/
 tmp*
 # Develop tools
 .idea/
