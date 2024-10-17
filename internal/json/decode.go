@@ -17,7 +17,6 @@ import (
 	"unicode"
 	"unicode/utf16"
 	"unicode/utf8"
-	_ "unsafe" // for linkname
 )
 
 // Unmarshal parses the JSON-encoded data and stores the result
@@ -53,8 +52,8 @@ import (
 //   - bool, for JSON booleans
 //   - float64, for JSON numbers
 //   - string, for JSON strings
-//   - []any, for JSON arrays
-//   - map[string]any, for JSON objects
+//   - []interface{}, for JSON arrays
+//   - map[string]interface{}, for JSON objects
 //   - nil for JSON null
 //
 // To unmarshal a JSON array into a slice, Unmarshal resets the slice length
@@ -73,7 +72,8 @@ import (
 // use. If the map is nil, Unmarshal allocates a new map. Otherwise Unmarshal
 // reuses the existing map, keeping existing entries. Unmarshal then stores
 // key-value pairs from the JSON object into the map. The map's key type must
-// either be any string type, an integer, or implement [encoding.TextUnmarshaler].
+// either be any string type, an integer, implement [json.Unmarshaler], or
+// implement [encoding.TextUnmarshaler].
 //
 // If the JSON-encoded data contain a syntax error, Unmarshal returns a [SyntaxError].
 //
@@ -127,7 +127,7 @@ type UnmarshalTypeError struct {
 	Type   reflect.Type // type of Go value it could not be assigned to
 	Offset int64        // error occurred after reading Offset bytes
 	Struct string       // name of the struct type containing the field
-	Field  string       // the full path from root node to the field, include embedded struct
+	Field  string       // the full path from root node to the field
 }
 
 func (e *UnmarshalTypeError) Error() string {
@@ -255,11 +255,7 @@ func (d *decodeState) addErrorContext(err error) error {
 		switch err := err.(type) {
 		case *UnmarshalTypeError:
 			err.Struct = d.errorContext.Struct.Name()
-			fieldStack := d.errorContext.FieldStack
-			if err.Field != "" {
-				fieldStack = append(fieldStack, err.Field)
-			}
-			err.Field = strings.Join(fieldStack, ".")
+			err.Field = strings.Join(d.errorContext.FieldStack, ".")
 		}
 	}
 	return err
@@ -470,7 +466,7 @@ func indirect(v reflect.Value, decodingNull bool) (Unmarshaler, encoding.TextUnm
 		}
 
 		// Prevent infinite loop if v is an interface pointing to its own address:
-		//     var v any
+		//     var v interface{}
 		//     v = &v
 		if v.Elem().Kind() == reflect.Interface && v.Elem().Elem() == v {
 			v = v.Elem()
@@ -701,10 +697,7 @@ func (d *decodeState) object(v reflect.Value) error {
 			if f != nil {
 				subv = v
 				destring = f.quoted
-				if d.errorContext == nil {
-					d.errorContext = new(errorContext)
-				}
-				for i, ind := range f.index {
+				for _, i := range f.index {
 					if subv.Kind() == reflect.Pointer {
 						if subv.IsNil() {
 							// If a struct embeds a pointer to an unexported type,
@@ -724,16 +717,13 @@ func (d *decodeState) object(v reflect.Value) error {
 						}
 						subv = subv.Elem()
 					}
-					if i < len(f.index)-1 {
-						d.errorContext.FieldStack = append(
-							d.errorContext.FieldStack,
-							subv.Type().Field(ind).Name,
-						)
-					}
-					subv = subv.Field(ind)
+					subv = subv.Field(i)
 				}
-				d.errorContext.Struct = t
+				if d.errorContext == nil {
+					d.errorContext = new(errorContext)
+				}
 				d.errorContext.FieldStack = append(d.errorContext.FieldStack, f.name)
+				d.errorContext.Struct = t
 			} else if d.disallowUnknownFields {
 				d.saveError(fmt.Errorf("json: unknown field %q", key))
 			}
@@ -786,7 +776,7 @@ func (d *decodeState) object(v reflect.Value) error {
 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 					s := string(key)
 					n, err := strconv.ParseInt(s, 10, 64)
-					if err != nil || kt.OverflowInt(n) {
+					if err != nil || reflect.Zero(kt).OverflowInt(n) {
 						d.saveError(&UnmarshalTypeError{Value: "number " + s, Type: kt, Offset: int64(start + 1)})
 						break
 					}
@@ -795,7 +785,7 @@ func (d *decodeState) object(v reflect.Value) error {
 				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 					s := string(key)
 					n, err := strconv.ParseUint(s, 10, 64)
-					if err != nil || kt.OverflowUint(n) {
+					if err != nil || reflect.Zero(kt).OverflowUint(n) {
 						d.saveError(&UnmarshalTypeError{Value: "number " + s, Type: kt, Offset: int64(start + 1)})
 						break
 					}
@@ -953,11 +943,10 @@ func (d *decodeState) literalStore(item []byte, v reflect.Value, fromQuoted bool
 			}
 			v.SetBytes(b[:n])
 		case reflect.String:
-			t := string(s)
-			if v.Type() == numberType && !isValidNumber(t) {
+			if v.Type() == numberType && !isValidNumber(string(s)) {
 				return fmt.Errorf("json: invalid number literal, trying to unmarshal %q into Number", item)
 			}
-			v.SetString(t)
+			v.SetString(string(s))
 		case reflect.Interface:
 			if v.NumMethod() == 0 {
 				v.Set(reflect.ValueOf(string(s)))
@@ -1029,7 +1018,7 @@ func (d *decodeState) literalStore(item []byte, v reflect.Value, fromQuoted bool
 // in an empty interface. They are not strictly necessary,
 // but they avoid the weight of reflection in this common case.
 
-// valueInterface is like value but returns any.
+// valueInterface is like value but returns interface{}
 func (d *decodeState) valueInterface() (val any) {
 	switch d.opcode {
 	default:
@@ -1046,7 +1035,7 @@ func (d *decodeState) valueInterface() (val any) {
 	return
 }
 
-// arrayInterface is like array but returns []any.
+// arrayInterface is like array but returns []interface{}.
 func (d *decodeState) arrayInterface() []any {
 	var v = make([]any, 0)
 	for {
@@ -1072,7 +1061,7 @@ func (d *decodeState) arrayInterface() []any {
 	return v
 }
 
-// objectInterface is like object but returns map[string]any.
+// objectInterface is like object but returns map[string]interface{}.
 func (d *decodeState) objectInterface() map[string]any {
 	m := make(map[string]any)
 	for {
@@ -1188,15 +1177,6 @@ func unquote(s []byte) (t string, ok bool) {
 	return
 }
 
-// unquoteBytes should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/bytedance/sonic
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname unquoteBytes
 func unquoteBytes(s []byte) (t []byte, ok bool) {
 	if len(s) < 2 || s[0] != '"' || s[len(s)-1] != '"' {
 		return

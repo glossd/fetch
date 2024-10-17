@@ -12,19 +12,18 @@ package json
 
 import (
 	"bytes"
-	"cmp"
 	"encoding"
 	"encoding/base64"
 	"fmt"
 	"math"
 	"reflect"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"unicode"
 	"unicode/utf8"
-	_ "unsafe" // for linkname
 )
 
 // Marshal returns the JSON encoding of v.
@@ -99,17 +98,6 @@ import (
 //	// Field appears in JSON as key "-".
 //	Field int `json:"-,"`
 //
-// The "omitzero" option specifies that the field should be omitted
-// from the encoding if the field has a zero value, according to rules:
-//
-// 1) If the field type has an "IsZero() bool" method, that will be used to
-// determine whether the value is zero.
-//
-// 2) Otherwise, the value is zero if it is the zero value for its type.
-//
-// If both "omitempty" and "omitzero" are specified, the field will be omitted
-// if the value is either empty or zero (or both).
-//
 // The "string" option signals that a field is stored as JSON inside a
 // JSON-encoded string. It applies only to fields of string, floating point,
 // integer, or boolean types. This extra level of encoding is sometimes used
@@ -152,7 +140,7 @@ import (
 // are sorted and used as JSON object keys by applying the following rules,
 // subject to the UTF-8 coercion described for string values above:
 //   - keys of any string type are used directly
-//   - keys that implement [encoding.TextMarshaler] are marshaled
+//   - [encoding.TextMarshalers] are marshaled
 //   - integer keys are converted to strings
 //
 // Pointer values encode as the value pointed to.
@@ -603,16 +591,6 @@ func stringEncoder(e *encodeState, v reflect.Value, opts encOpts) {
 }
 
 // isValidNumber reports whether s is a valid JSON number literal.
-//
-// isValidNumber should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/bytedance/sonic
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname isValidNumber
 func isValidNumber(s string) bool {
 	// This function implements the JSON numbers grammar.
 	// See https://tools.ietf.org/html/rfc7159#section-6
@@ -712,8 +690,7 @@ FieldLoop:
 			fv = fv.Field(i)
 		}
 
-		if (f.omitEmpty && isEmptyValue(fv)) ||
-			(f.omitZero && (f.isZero == nil && fv.IsZero() || (f.isZero != nil && f.isZero(fv)))) {
+		if f.omitEmpty && isEmptyValue(fv) {
 			continue
 		}
 		e.WriteByte(next)
@@ -835,7 +812,7 @@ func (se sliceEncoder) encode(e *encodeState, v reflect.Value, opts encOpts) {
 		// Here we use a struct to memorize the pointer to the first element of the slice
 		// and its length.
 		ptr := struct {
-			ptr any // always an unsafe.Pointer, but avoids a dependency on package unsafe
+			ptr interface{} // always an unsafe.Pointer, but avoids a dependency on package unsafe
 			len int
 		}{v.UnsafePointer(), v.Len()}
 		if _, ok := e.ptrSeen[ptr]; ok {
@@ -1064,32 +1041,33 @@ type field struct {
 	index     []int
 	typ       reflect.Type
 	omitEmpty bool
-	omitZero  bool
-	isZero    func(reflect.Value) bool
 	quoted    bool
 
 	encoder encoderFunc
 }
 
-type isZeroer interface {
-	IsZero() bool
-}
+// byIndex sorts field by index sequence.
+type byIndex []field
 
-var isZeroerType = reflect.TypeFor[isZeroer]()
+func (x byIndex) Len() int { return len(x) }
+
+func (x byIndex) Swap(i, j int) { x[i], x[j] = x[j], x[i] }
+
+func (x byIndex) Less(i, j int) bool {
+	for k, xik := range x[i].index {
+		if k >= len(x[j].index) {
+			return false
+		}
+		if xik != x[j].index[k] {
+			return xik < x[j].index[k]
+		}
+	}
+	return len(x[i].index) < len(x[j].index)
+}
 
 // typeFields returns a list of fields that JSON should recognize for the given type.
 // The algorithm is breadth-first search over the set of structs to include - the top struct
 // and then any reachable anonymous structs.
-//
-// typeFields should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/bytedance/sonic
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname typeFields
 func typeFields(t reflect.Type) structFields {
 	// Anonymous fields to explore at the current level and the next.
 	current := []field{}
@@ -1178,7 +1156,6 @@ func typeFields(t reflect.Type) structFields {
 						index:     index,
 						typ:       ft,
 						omitEmpty: opts.Contains("omitempty"),
-						omitZero:  opts.Contains("omitzero"),
 						quoted:    quoted,
 					}
 					field.nameBytes = []byte(field.name)
@@ -1187,40 +1164,6 @@ func typeFields(t reflect.Type) structFields {
 					nameEscBuf = appendHTMLEscape(nameEscBuf[:0], field.nameBytes)
 					field.nameEscHTML = `"` + string(nameEscBuf) + `":`
 					field.nameNonEsc = `"` + field.name + `":`
-
-					if field.omitZero {
-						t := sf.Type
-						// Provide a function that uses a type's IsZero method.
-						switch {
-						case t.Kind() == reflect.Interface && t.Implements(isZeroerType):
-							field.isZero = func(v reflect.Value) bool {
-								// Avoid panics calling IsZero on a nil interface or
-								// non-nil interface with nil pointer.
-								return v.IsNil() ||
-									(v.Elem().Kind() == reflect.Pointer && v.Elem().IsNil()) ||
-									v.Interface().(isZeroer).IsZero()
-							}
-						case t.Kind() == reflect.Pointer && t.Implements(isZeroerType):
-							field.isZero = func(v reflect.Value) bool {
-								// Avoid panics calling IsZero on nil pointer.
-								return v.IsNil() || v.Interface().(isZeroer).IsZero()
-							}
-						case t.Implements(isZeroerType):
-							field.isZero = func(v reflect.Value) bool {
-								return v.Interface().(isZeroer).IsZero()
-							}
-						case reflect.PointerTo(t).Implements(isZeroerType):
-							field.isZero = func(v reflect.Value) bool {
-								if !v.CanAddr() {
-									// Temporarily box v so we can take the address.
-									v2 := reflect.New(v.Type()).Elem()
-									v2.Set(v)
-									v = v2
-								}
-								return v.Addr().Interface().(isZeroer).IsZero()
-							}
-						}
-					}
 
 					fields = append(fields, field)
 					if count[f.typ] > 1 {
@@ -1242,23 +1185,21 @@ func typeFields(t reflect.Type) structFields {
 		}
 	}
 
-	slices.SortFunc(fields, func(a, b field) int {
+	sort.Slice(fields, func(i, j int) bool {
+		x := fields
 		// sort field by name, breaking ties with depth, then
 		// breaking ties with "name came from json tag", then
 		// breaking ties with index sequence.
-		if c := strings.Compare(a.name, b.name); c != 0 {
-			return c
+		if x[i].name != x[j].name {
+			return x[i].name < x[j].name
 		}
-		if c := cmp.Compare(len(a.index), len(b.index)); c != 0 {
-			return c
+		if len(x[i].index) != len(x[j].index) {
+			return len(x[i].index) < len(x[j].index)
 		}
-		if a.tag != b.tag {
-			if a.tag {
-				return -1
-			}
-			return +1
+		if x[i].tag != x[j].tag {
+			return x[i].tag
 		}
-		return slices.Compare(a.index, b.index)
+		return byIndex(x).Less(i, j)
 	})
 
 	// Delete all fields that are hidden by the Go rules for embedded fields,
@@ -1290,9 +1231,7 @@ func typeFields(t reflect.Type) structFields {
 	}
 
 	fields = out
-	slices.SortFunc(fields, func(i, j field) int {
-		return slices.Compare(i.index, j.index)
-	})
+	sort.Sort(byIndex(fields))
 
 	for i := range fields {
 		f := &fields[i]
