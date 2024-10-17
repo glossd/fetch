@@ -15,9 +15,9 @@ go get github.com/glossd/fetch
 ```
 
 ## Structure
-Functions of the `fetch` package match HTTP methods. Each function is generic and its generic type is the response. 
+Functions of the `fetch` package match HTTP methods. Each function is generic and its generic type is the response.  
 
-<div align="center">fetch.<b>Method</b>[<b>ResponseType</b>](<i>url string</i>, ...) returns <b>ResponseType</b></div>
+$${\color{lightblue}fetch. \color{lightgreen}Method \color{lightblue}[ \color{cyan}ResponseType \color{lightblue}](url \space string, \space ...) \space returns \space \color{cyan}ResponseType}$$
 
 ## Examples
 
