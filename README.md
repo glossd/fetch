@@ -1,5 +1,5 @@
 <div align="center">
-    <img src=".github/fetch.svg" width="600" alt="FETCH">
+    <img src=".github/fetch.svg" width="400" height="60" alt="FETCH">
 </div>
 <div align="center">Simple Go http client. Inspired by axios library and JSON handling in JS. Improved with generics.</div>  
 
