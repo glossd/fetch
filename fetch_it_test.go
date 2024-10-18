@@ -1,6 +1,7 @@
 package fetch
 
 import (
+	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -30,7 +31,9 @@ func TestRequestIntegration(t *testing.T) {
 		}
 	})
 
-	go http.ListenAndServe(":7349", mux)
+	server := &http.Server{Addr: ":7349", Handler: mux}
+	go server.ListenAndServe()
+	defer server.Shutdown(context.Background())
 	time.Sleep(time.Millisecond)
 
 	_, err := Get[string]("localhost:7349/hello")
@@ -62,5 +65,34 @@ func TestRequestIntegration(t *testing.T) {
 	_, err = Post[Pet]("localhost:7349/get", "i'm post")
 	if err.Error() != `http status=405, body={"message":"get out"}` {
 		t.Errorf("expected 405 status error, got=%s", err)
+	}
+}
+
+func TestIssue1(t *testing.T) {
+	mock = false
+	defer func() { mock = true }()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v3/sessions", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		_, err := w.Write([]byte("all good"))
+		if err != nil {
+			panic(err)
+		}
+	})
+	server := &http.Server{Addr: ":7349", Handler: mux}
+	go server.ListenAndServe()
+	defer server.Shutdown(context.Background())
+	time.Sleep(time.Millisecond)
+
+	SetBaseURL("http://localhost:7349/v3")
+	defer SetBaseURL("")
+
+	res, err := Post[string]("/sessions", M{"key": "value"})
+	if err != nil {
+		t.Fatalf("Got error: %s", err)
+	}
+
+	if res != "all good" {
+		t.Errorf("wrong response")
 	}
 }
