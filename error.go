@@ -80,5 +80,14 @@ func jqerr(format string, a ...any) *JQError {
 }
 
 func IsJQError(v any) bool {
-	return reflect.TypeOf(v) == reflect.TypeFor[*JQError]()
+	return reflect.TypeOf(v) == TypeFor[*JQError]()
+}
+
+// reflect.TypeFor was introduced in go1.22
+func TypeFor[T any]() reflect.Type {
+	var v T
+	if t := reflect.TypeOf(v); t != nil {
+		return t
+	}
+	return reflect.TypeOf((*T)(nil)).Elem()
 }
