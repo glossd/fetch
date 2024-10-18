@@ -137,7 +137,7 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 		res, err = httpClient.Do(req)
 		if err != nil {
 			var t T
-			return t, nonHttpErr("invalid request: ", err)
+			return t, nonHttpErr("failed request: ", err)
 		}
 	}
 
