@@ -1,7 +1,8 @@
 <div align="center">
     <img src=".github/fetch.svg" width="250px" height="60" alt="FETCH">
 </div>
-<div align="center">Simple Go http client. Inspired by axios library and JSON handling in JS. Improved with generics.</div>  
+
+<div align="center">Go HTTP client. Inspired by the simplicity of <a href="https://github.com/axios/axios">axios</a> and JSON handling in JS. Improved with generics.</div>
 
 ## Reasons
 1. I was tired of using `json` tags for each field. This package de-capitalizes the public fields in JSON parsing unless the `json` tag is specified.
