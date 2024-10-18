@@ -107,9 +107,10 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 	}
 
 	fullURL := baseURL + url
-	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+	if hasProtocol(url) {
 		fullURL = url
-	} else {
+	}
+	if !hasProtocol(fullURL) {
 		if strings.HasPrefix(fullURL, "localhost") {
 			fullURL = "http://" + fullURL
 		} else {
@@ -190,6 +191,10 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 		return t, httpErr("parsing JSON error: ", err, res)
 	}
 	return t, nil
+}
+
+func hasProtocol(url string) bool {
+	return strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://")
 }
 
 func parseBodyInto(body []byte, v any) error {
