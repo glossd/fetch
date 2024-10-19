@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+var jnil Nil
+
 type J interface {
 	// Q parses JQ-like patterns and returns according to the path value.
 	// E.g.
@@ -21,25 +23,26 @@ type J interface {
 	// Retrieve name: j.Q(".name")
 	// Retrieve category name: j.Q(".category.name")
 	// Retrieve first tag's name: j.Q(".tags[0].name")
+	// If the value wasn't found, instead of nil value it will return Nil.
+	// if the pattern syntax is invalid, it returns JQError.
 	Q(pattern string) J
+
 	// String returns JSON formatted string.
 	String() string
+
 	// Raw converts the value to its definition and returns it.
-	// Check the value on nil because Q might return nil value. In Golang
-	// calling a method on a nil interface is a run-time error.
-	// Type definitions:
+	// Type-Definitions:
 	// M -> map[string]any
 	// A -> []any
 	// F -> float64
 	// S -> string
+	// Nil -> nil
 	Raw() any
 }
 
+// M represents a JSON object.
 type M map[string]any
 
-// Q parses JQ-like patterns and returns according to the path value.
-// Invalid pattern doesn't error
-// Retrieve a field  Q(".name")
 func (m M) Q(pattern string) J {
 	if strings.HasPrefix(pattern, ".") {
 		pattern = pattern[1:]
@@ -56,7 +59,7 @@ func (m M) Q(pattern string) J {
 
 	v, ok := m[key]
 	if !ok {
-		return nil
+		return jnil
 	}
 
 	return parseValue(v, remaining, sep)
@@ -70,6 +73,7 @@ func (m M) Raw() any {
 	return map[string]any(m)
 }
 
+// A represents a JSON array
 type A []any
 
 func (a A) Q(pattern string) J {
@@ -82,7 +86,7 @@ func (a A) Q(pattern string) J {
 
 	if pattern[0] != '[' {
 		// expected array index, got object key
-		return nil
+		return jnil
 	}
 	closeBracket := strings.Index(pattern, "]")
 	if closeBracket == -1 {
@@ -95,7 +99,7 @@ func (a A) Q(pattern string) J {
 	}
 	if index < 0 || index >= len(a) {
 		// index out of range
-		return nil
+		return jnil
 	}
 
 	v := a[index]
@@ -131,13 +135,14 @@ func parseValue(v any, remaining string, sep string) J {
 		arr, ok := v.([]any)
 		if !ok {
 			// expected an array
-			return nil
+			return jnil
 		}
 		return A(arr).Q(remaining)
 	}
 	panic("glossd/fetch panic, please report to github: array only expected . or [ ")
 }
 
+// F represents a JSON number
 type F float64
 
 func (f F) Q(pattern string) J {
@@ -147,7 +152,7 @@ func (f F) Q(pattern string) J {
 	if pattern == "." {
 		return f
 	}
-	return nil
+	return jnil
 }
 
 func (f F) String() string {
@@ -158,6 +163,7 @@ func (f F) Raw() any {
 	return float64(f)
 }
 
+// S can't be a root value.
 type S string
 
 func (s S) Q(pattern string) J {
@@ -167,7 +173,7 @@ func (s S) Q(pattern string) J {
 	if pattern == "." {
 		return s
 	}
-	return nil
+	return jnil
 }
 
 func (s S) String() string {
@@ -176,6 +182,25 @@ func (s S) String() string {
 
 func (s S) Raw() any {
 	return string(s)
+}
+
+type nilStruct struct{}
+
+// Nil represents any not found value.  The pointer's value is always nil.
+// It exists to prevent nil pointer dereference when retrieving Raw value.
+// Nil can't be a root value.
+type Nil = *nilStruct
+
+func (n Nil) Q(string) J {
+	return n
+}
+
+func (n Nil) String() string {
+	return "nil"
+}
+
+func (n Nil) Raw() any {
+	return nil
 }
 
 func nextSep(pattern string) (int, string) {
@@ -208,7 +233,7 @@ func beforeSep(pattern string) string {
 
 func convert(v any) J {
 	if v == nil {
-		return nil
+		return jnil
 	}
 	switch t := v.(type) {
 	case float64:

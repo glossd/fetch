@@ -51,11 +51,7 @@ func TestJ_Q(t *testing.T) {
 		//	fmt.Print()
 		//}
 
-		gotJ := j.Q(c.P)
-		var got any
-		if gotJ != nil {
-			got = gotJ.Raw()
-		}
+		got := j.Q(c.P).Raw()
 		if got != c.E {
 			t.Errorf("case #%d: wrong value, expected=%v, got=%v", i, c.E, got)
 		}
@@ -119,5 +115,26 @@ func TestJ_String(t *testing.T) {
 	var j J = M{"name": "Lola"}
 	if fmt.Sprint(j) != `{"name":"Lola"}` {
 		t.Errorf("J.String j inteface wrong value")
+	}
+}
+
+func TestJ_Nil(t *testing.T) {
+	j, err := Unmarshal[J](`{"name":"Lola"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if j.Q(".id") == nil {
+		t.Errorf("didn't expect J value to be nil")
+	}
+	fmt.Println(j.Q(".id"))
+	if j.Q(".id").Raw() != nil {
+		t.Errorf("expected id to be nil")
+	}
+	if j.Q(".id").String() != "nil" {
+		t.Errorf("expected id to print nil")
+	}
+	if j.Q(".id").Q(".yaid").Raw() != nil {
+		t.Errorf("expected id to be nil")
 	}
 }

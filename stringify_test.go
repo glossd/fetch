@@ -36,23 +36,3 @@ func TestMarshalStruct(t *testing.T) {
 		}
 	}
 }
-
-type SA struct {
-	t        *testing.T
-	expected string
-}
-
-func (sa SA) assertMarshal(res string, err error) {
-	if err != nil {
-		sa.t.Fatalf("Marshal error: %s", err)
-	}
-	if sa.expected != string(res) {
-		sa.t.Errorf("Marshal result mismatch, got=%s, expected=%s", res, sa.expected)
-	}
-}
-
-func assertNil(a any) {
-	if a != nil {
-		panic(a)
-	}
-}

@@ -187,16 +187,24 @@ fmt.Println("Pet's name is", j.Q(".name"))
 fmt.Println("Pet's category name is", j.Q(".category.name"))
 fmt.Println("First tag's name is", j.Q(".tags[0].name"))
 ```
-Depending on the JSON input the unmarshalled `fetch.J` could be one of these types implementing `fetch.J` 
+Depending on the JSON data type the queried `fetch.J` could be one of these types
 
-| Type    | Definition      |
-|---------|-----------------|
-| fetch.M | map[string]any  |
-| fetch.A | []any           |
-| fetch.F | float64         |
-| fetch.S | string          |
+| Type      | Go definition   | JSON data type                      |
+|-----------|-----------------|-------------------------------------|
+| fetch.M   | map[string]any  | object                              |
+| fetch.A   | []any           | array                               |
+| fetch.F   | float64         | number                              |
+| fetch.S   | string          | string                              |
+| fetch.Nil | (nil) *struct{} | null, undefined, anything not found |
  
-If you want `fetch.J` to return the value of the Definition type call method `fetch.J#Raw()`.
+If you want `fetch.J` to return the value of the definition type, call method `fetch.J#Raw()`.  
+E.g. check if `fetch.J` is `nil`
+```go
+j, _ := fetch.Unmarshal[fetch.J]("{}")
+if j.Q(".name").Raw() == nil {
+    // key 'name' doesn't exist
+}
+```
 
 Method `fetch.J#Q` returns `fetch.J`. You can use the method `Q` on the result as well.
 ```go
