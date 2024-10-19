@@ -19,6 +19,8 @@ func TestJ_Q(t *testing.T) {
 		{In: `{"pet": {"dog": {"name": "Lola"}}}`, P: ".pet.dog.name", E: "Lola"},
 		{In: `{"num": 1}`, P: ".num", E: 1.0},
 		{In: `1`, P: ".", E: 1.0},
+		{In: `true`, P: ".", E: true},
+		{In: `{"sold": false}`, P: ".sold", E: false},
 		{In: `[1, 2, 3]`, P: ".[0]", E: 1.0},
 		{In: `[{"name":"Lola"}, {"name":"Buster"}]`, P: ".[1].name", E: "Buster"},
 		{In: `{"nums":[1, 2, 57]}`, P: ".nums[2]", E: 57.0},

@@ -36,6 +36,7 @@ type J interface {
 	// A -> []any
 	// F -> float64
 	// S -> string
+	// B -> bool
 	// Nil -> nil
 	Raw() any
 }
@@ -184,6 +185,27 @@ func (s S) Raw() any {
 	return string(s)
 }
 
+// B represents a JSON boolean
+type B bool
+
+func (b B) Q(pattern string) J {
+	if pattern == "" {
+		return b
+	}
+	if pattern == "." {
+		return b
+	}
+	return jnil
+}
+
+func (b B) String() string {
+	return strconv.FormatBool(bool(b))
+}
+
+func (b B) Raw() any {
+	return bool(b)
+}
+
 type nilStruct struct{}
 
 // Nil represents any not found value.  The pointer's value is always nil.
@@ -236,6 +258,8 @@ func convert(v any) J {
 		return jnil
 	}
 	switch t := v.(type) {
+	case bool:
+		return B(t)
 	case float64:
 		return F(t)
 	case string:

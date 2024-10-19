@@ -195,6 +195,7 @@ Depending on the JSON data type the queried `fetch.J` could be one of these type
 | fetch.A   | []any           | array                               |
 | fetch.F   | float64         | number                              |
 | fetch.S   | string          | string                              |
+| fetch.B   | bool            | boolean                             |
 | fetch.Nil | (nil) *struct{} | null, undefined, anything not found |
  
 If you want `fetch.J` to return the value of the definition type, call method `fetch.J#Raw()`.  

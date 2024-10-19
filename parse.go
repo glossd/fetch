@@ -39,6 +39,8 @@ func UnmarshalInto(j string, v any) error {
 			return err
 		}
 		switch u := a.(type) {
+		case bool:
+			rve.Set(reflect.ValueOf(B(u)))
 		case float64:
 			rve.Set(reflect.ValueOf(F(u)))
 		case map[string]any:
