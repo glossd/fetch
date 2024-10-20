@@ -179,7 +179,7 @@ j, err := fetch.Unmarshal[fetch.J](`{
     ]
 }`)
 if err != nil {
-panic(err)
+    panic(err)
 }
 
 fmt.Println("Print the whole json:", j)
@@ -213,7 +213,7 @@ n, ok := j.Q(".price").AsNumber()
 if !ok {
     // not a number
 }
-fmt.Printf("Price: %f\n", n) // n is a float64
+fmt.Printf("Price: %.2f\n", n) // n is a float64
 ```
 
 `fetch.J` is only `nil` when an error happens. Use `IsNil` to check the value on presence.
