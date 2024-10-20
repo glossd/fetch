@@ -202,6 +202,7 @@ To convert `fetch.J` to a basic value use one of `As*` methods
 | AsNumber  | float64        |
 | AsString  | string         |
 | AsBoolean | bool           |
+
 E.g.
 ```go
 j, err := fetch.Unmarshal[fetch.J](`{"price": 14.99}`)
@@ -219,10 +220,14 @@ fmt.Printf("Price: %f\n", n) // n is a float64
 ```go
 j, err := fetch.Unmarshal[fetch.J]("{}")
 if err != nil {
-	panic(err)
+    panic(err)
 }
 if j.Q(".price").IsNil() {
     // key 'price' doesn't exist
+}
+// fields of unknown values are nil as well.
+if j.Q(".price.cents").IsNil() {
+    fmt.Println("'cents' of undefined is fine.")
 }
 ```
 
