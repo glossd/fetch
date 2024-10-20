@@ -36,3 +36,19 @@ func TestUnmarshalString(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestUnmarshalJ(t *testing.T) {
+	var n Nil
+	_, err := UnmarshalJ[string](n)
+	if err == nil {
+		t.Fatalf("nil shouldn't be unmarshaled")
+	}
+
+	r, err := UnmarshalJ[map[string]string](M{"name": "Lola"})
+	if err != nil {
+		t.Fatal("UnmarshalJ error:", err)
+	}
+	if r["name"] != "Lola" {
+		t.Errorf("UnmarshalJ result mismatch, got=%s", r)
+	}
+}

@@ -187,31 +187,43 @@ fmt.Println("Pet's name is", j.Q(".name"))
 fmt.Println("Pet's category name is", j.Q(".category.name"))
 fmt.Println("First tag's name is", j.Q(".tags[0].name"))
 ```
-Depending on the JSON data type the queried `fetch.J` could be one of these types
-
-| Type      | Go definition   | JSON data type                      |
-|-----------|-----------------|-------------------------------------|
-| fetch.M   | map[string]any  | object                              |
-| fetch.A   | []any           | array                               |
-| fetch.F   | float64         | number                              |
-| fetch.S   | string          | string                              |
-| fetch.B   | bool            | boolean                             |
-| fetch.Nil | (nil) *struct{} | null, undefined, anything not found |
- 
-If you want `fetch.J` to return the value of the definition type, call method `fetch.J#Raw()`.  
-E.g. check if `fetch.J` is `nil`
-```go
-j, _ := fetch.Unmarshal[fetch.J]("{}")
-if j.Q(".name").Raw() == nil {
-    // key 'name' doesn't exist
-}
-```
-
 Method `fetch.J#Q` returns `fetch.J`. You can use the method `Q` on the result as well.
 ```go
 category := j.Q(".category")
 fmt.Println("Pet's category object", category)
 fmt.Println("Pet's category name is", category.Q(".name"))
+```
+To convert `fetch.J` to a basic value use one of `As*` methods
+
+| J Method  | Return type    |
+|-----------|----------------|
+| AsObject  | map[string]any |
+| AsArray   | []any          |
+| AsNumber  | float64        |
+| AsString  | string         |
+| AsBoolean | bool           |
+E.g.
+```go
+j, err := fetch.Unmarshal[fetch.J](`{"price": 14.99}`)
+if err != nil {
+    panic(err)
+}
+n, ok := j.Q(".price").AsNumber()
+if !ok {
+    // not a number
+}
+fmt.Printf("Price: %f\n", n) // n is a float64
+```
+
+`fetch.J` is only `nil` when an error happens. Use `IsNil` to check the value on presence.
+```go
+j, err := fetch.Unmarshal[fetch.J]("{}")
+if err != nil {
+	panic(err)
+}
+if j.Q(".price").IsNil() {
+    // key 'price' doesn't exist
+}
 ```
 
 ### JSON handling

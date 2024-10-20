@@ -2,12 +2,24 @@ package fetch
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 )
 
 var jnil Nil
 
+// J represents arbitrary JSON.
+// Depending on the JSON data type the queried `fetch.J` could be one of these types
+//
+// | Type      | Go definition   | JSON data type                      |
+// |-----------|-----------------|-------------------------------------|
+// | fetch.M   | map[string]any  | object                              |
+// | fetch.A   | []any           | array                               |
+// | fetch.F   | float64         | number                              |
+// | fetch.S   | string          | string                              |
+// | fetch.B   | bool            | boolean                             |
+// | fetch.Nil | (nil) *struct{} | null, undefined, anything not found |
 type J interface {
 	// Q parses JQ-like patterns and returns according to the path value.
 	// E.g.
@@ -39,6 +51,19 @@ type J interface {
 	// B -> bool
 	// Nil -> nil
 	Raw() any
+
+	// AsObject is a convenient type assertion if the underlying value holds a map[string]any.
+	AsObject() (map[string]any, bool)
+	// AsArray is a convenient type assertion if the underlying value holds a slice of type []any.
+	AsArray() ([]any, bool)
+	// AsNumber is a convenient type assertion if the underlying value holds a float64.
+	AsNumber() (float64, bool)
+	// AsString is a convenient type assertion if the underlying value holds a string.
+	AsString() (string, bool)
+	// AsBoolean is a convenient type assertion if the underlying value holds a bool.
+	AsBoolean() (bool, bool)
+	// IsNil check if the underlying value is fetch.Nil
+	IsNil() bool
 }
 
 // M represents a JSON object.
@@ -73,6 +98,13 @@ func (m M) String() string {
 func (m M) Raw() any {
 	return map[string]any(m)
 }
+
+func (m M) AsObject() (map[string]any, bool) { return m, true }
+func (m M) AsArray() ([]any, bool)           { return nil, false }
+func (m M) AsNumber() (float64, bool)        { return 0, false }
+func (m M) AsString() (string, bool)         { return "", false }
+func (m M) AsBoolean() (bool, bool)          { return false, false }
+func (m M) IsNil() bool                      { return false }
 
 // A represents a JSON array
 type A []any
@@ -124,6 +156,13 @@ func (a A) Raw() any {
 	return []any(a)
 }
 
+func (a A) AsObject() (map[string]any, bool) { return nil, false }
+func (a A) AsArray() ([]any, bool)           { return a, true }
+func (a A) AsNumber() (float64, bool)        { return 0, false }
+func (a A) AsString() (string, bool)         { return "", false }
+func (a A) AsBoolean() (bool, bool)          { return false, false }
+func (a A) IsNil() bool                      { return false }
+
 func parseValue(v any, remaining string, sep string) J {
 	if j, ok := v.(J); ok {
 		return j.Q(remaining)
@@ -164,6 +203,13 @@ func (f F) Raw() any {
 	return float64(f)
 }
 
+func (f F) AsObject() (map[string]any, bool) { return nil, false }
+func (f F) AsArray() ([]any, bool)           { return nil, false }
+func (f F) AsNumber() (float64, bool)        { return float64(f), true }
+func (f F) AsString() (string, bool)         { return "", false }
+func (f F) AsBoolean() (bool, bool)          { return false, false }
+func (f F) IsNil() bool                      { return false }
+
 // S can't be a root value.
 type S string
 
@@ -184,6 +230,13 @@ func (s S) String() string {
 func (s S) Raw() any {
 	return string(s)
 }
+
+func (s S) AsObject() (map[string]any, bool) { return nil, false }
+func (s S) AsArray() ([]any, bool)           { return nil, false }
+func (s S) AsNumber() (float64, bool)        { return 0, false }
+func (s S) AsString() (string, bool)         { return string(s), true }
+func (s S) AsBoolean() (bool, bool)          { return false, false }
+func (s S) IsNil() bool                      { return false }
 
 // B represents a JSON boolean
 type B bool
@@ -206,9 +259,16 @@ func (b B) Raw() any {
 	return bool(b)
 }
 
+func (b B) AsObject() (map[string]any, bool) { return nil, false }
+func (b B) AsArray() ([]any, bool)           { return nil, false }
+func (b B) AsNumber() (float64, bool)        { return 0, false }
+func (b B) AsString() (string, bool)         { return "", false }
+func (b B) AsBoolean() (bool, bool)          { return bool(b), true }
+func (b B) IsNil() bool                      { return false }
+
 type nilStruct struct{}
 
-// Nil represents any not found value.  The pointer's value is always nil.
+// Nil represents any not found value. The pointer's value is always nil.
 // It exists to prevent nil pointer dereference when retrieving Raw value.
 // Nil can't be a root value.
 type Nil = *nilStruct
@@ -223,6 +283,17 @@ func (n Nil) String() string {
 
 func (n Nil) Raw() any {
 	return nil
+}
+
+func (n Nil) AsObject() (map[string]any, bool) { return nil, false }
+func (n Nil) AsArray() ([]any, bool)           { return nil, false }
+func (n Nil) AsNumber() (float64, bool)        { return 0, false }
+func (n Nil) AsString() (string, bool)         { return "", false }
+func (n Nil) AsBoolean() (bool, bool)          { return false, false }
+func (n Nil) IsNil() bool                      { return true }
+
+func isJNil(v any) bool {
+	return v == nil || reflect.TypeOf(v) == typeFor[Nil]()
 }
 
 func nextSep(pattern string) (int, string) {
@@ -276,6 +347,7 @@ func convert(v any) J {
 func marshalJ(v any) string {
 	r, err := Marshal(v)
 	if err != nil {
+		// shouldn't happen, A and M are marshalable.
 		return err.Error()
 	}
 	return r
