@@ -129,7 +129,9 @@ func TestJ_Nil(t *testing.T) {
 	if j.Q(".id") == nil {
 		t.Errorf("didn't expect J value to be nil")
 	}
-	fmt.Println(j.Q(".id"))
+	if !j.Q("id").IsNil() {
+		t.Errorf("expected J.IsNil to be true")
+	}
 	if j.Q(".id").Raw() != nil {
 		t.Errorf("expected id to be nil")
 	}
@@ -139,4 +141,89 @@ func TestJ_Nil(t *testing.T) {
 	if j.Q(".id").Q(".yaid").Raw() != nil {
 		t.Errorf("expected id to be nil")
 	}
+}
+
+func TestJ_AsFirstValue(t *testing.T) {
+	m, _ := mustUnmarshal(`{"key":"value"}`).AsObject()
+	if m["key"] != "value" {
+		t.Errorf("object value is wrong")
+	}
+
+	a, _ := mustUnmarshal(`[1, 2, 3]`).AsArray()
+	if len(a) != 3 {
+		t.Errorf("array value is wrong")
+	}
+
+	n, _ := mustUnmarshal(`1`).AsNumber()
+	if n != 1 {
+		t.Errorf("number value is wrong")
+	}
+
+	s, _ := mustUnmarshal(`{"key":"value"}`).Q("key").AsString()
+	if s != "value" {
+		t.Errorf("string value is wrong")
+	}
+
+	b, _ := mustUnmarshal(`true`).AsBoolean()
+	if !b {
+		t.Errorf("boolean value is wrong")
+	}
+}
+
+type AsCheck struct {
+	Boolean bool
+	Number  bool
+	String  bool
+	Array   bool
+	Object  bool
+	IsNil   bool
+}
+
+func TestJ_AsSecondValue(t *testing.T) {
+
+	type testCase struct {
+		I J
+		O AsCheck
+	}
+
+	var cases = []testCase{
+		{I: mustUnmarshal(`{"key":"value"}`), O: AsCheck{Object: true}},
+		{I: mustUnmarshal(`{"outer":{"key":"value"}}`).Q("outer"), O: AsCheck{Object: true}},
+		{I: mustUnmarshal(`{"key":[1, 2, 3]}`).Q("key"), O: AsCheck{Array: true}},
+		{I: mustUnmarshal(`[1, 2]`), O: AsCheck{Array: true}},
+		{I: mustUnmarshal(`0`), O: AsCheck{Number: true}},
+		{I: mustUnmarshal(`1`), O: AsCheck{Number: true}},
+		{I: mustUnmarshal(`false`), O: AsCheck{Boolean: true}},
+		{I: mustUnmarshal(`true`), O: AsCheck{Boolean: true}},
+		{I: mustUnmarshal(`{"key":"value"}`).Q("key"), O: AsCheck{String: true}},
+		{I: mustUnmarshal(`{}`).Q("key"), O: AsCheck{IsNil: true}},
+	}
+	for i, c := range cases {
+		if c.I.IsNil() != c.O.IsNil {
+			t.Errorf("%d nil mismatch", i)
+		}
+		if _, ok := c.I.AsBoolean(); ok != c.O.Boolean {
+			t.Errorf("%d boolean mismatch", i)
+		}
+		if _, ok := c.I.AsNumber(); ok != c.O.Number {
+			t.Errorf("%d number mismatch", i)
+		}
+		if _, ok := c.I.AsString(); ok != c.O.String {
+			t.Errorf("%d string mismatch", i)
+		}
+		if _, ok := c.I.AsArray(); ok != c.O.Array {
+			t.Errorf("%d array mismatch", i)
+		}
+		if _, ok := c.I.AsObject(); ok != c.O.Object {
+			t.Errorf("%d object mismatch", i)
+		}
+	}
+}
+
+func mustUnmarshal(s string) J {
+	j, err := Unmarshal[J](s)
+	if err != nil {
+		panic(err)
+	}
+	return j
 }

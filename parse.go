@@ -13,6 +13,19 @@ import (
 //	return t
 //}
 
+// UnmarshalJ sends J.String() to Unmarshal.
+func UnmarshalJ[T any](j J) (T, error) {
+	if isJNil(j) {
+		var t T
+		return t, fmt.Errorf("cannot unmarshal nil J")
+	}
+	if IsJQError(j) {
+		var t T
+		return t, fmt.Errorf("cannot unmarshal JQerror")
+	}
+	return Unmarshal[T](j.String())
+}
+
 // Unmarshal is a generic wrapper for UnmarshalInto
 func Unmarshal[T any](j string) (T, error) {
 	var t T

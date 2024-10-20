@@ -39,6 +39,8 @@ func httpErr(prefix string, err error, r *http.Response) *Error {
 	return &Error{inner: err, Msg: prefix + err.Error(), Status: r.StatusCode, Headers: uniqueHeaders(r.Header)}
 }
 
+// JQError is returned from J.Q on invalid syntax.
+// It seems to be better to return this than panic.
 type JQError struct {
 	s string
 }
@@ -57,12 +59,7 @@ func (e *JQError) Unwrap() error {
 	return errors.New(e.s)
 }
 
-func (e *JQError) Q(pattern string) J {
-	if e == nil {
-		return S("")
-	}
-	return S(e.Error())
-}
+func (e *JQError) Q(pattern string) J { return e }
 
 func (e *JQError) String() string {
 	if e == nil {
@@ -71,9 +68,13 @@ func (e *JQError) String() string {
 	return e.Error()
 }
 
-func (e *JQError) Raw() any {
-	return e
-}
+func (e *JQError) Raw() any                         { return e }
+func (e *JQError) AsObject() (map[string]any, bool) { return nil, false }
+func (e *JQError) AsArray() ([]any, bool)           { return nil, false }
+func (e *JQError) AsNumber() (float64, bool)        { return 0, false }
+func (e *JQError) AsString() (string, bool)         { return "", false }
+func (e *JQError) AsBoolean() (bool, bool)          { return false, false }
+func (e *JQError) IsNil() bool                      { return false }
 
 func jqerr(format string, a ...any) *JQError {
 	return &JQError{s: fmt.Sprintf(format, a...)}
