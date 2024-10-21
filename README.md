@@ -55,7 +55,7 @@ if err != nil {
 fmt.Println("Pet's name is ", j.Q(".name"))
 fmt.Println("First tag's name is ", j.Q(".tags[0].name"))
 ```
-[jq-like patterns](#jq-like-patterns)
+[More about jq-like patterns](#jq-like-queries)
 #### Statically typed
 ```go
 type Tag struct {
@@ -165,7 +165,7 @@ if err != nil {
 fmt.Println("First sold pet ", j.Q(".[0]"))
 ```
 
-### jq-like patterns
+### JQ-like queries
 `fetch.J` is an interface with `Q` method which provides easy access to any field.   
 Method `fetch.J#String()` returns JSON formatted string of the value. 
 ```go
