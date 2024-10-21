@@ -292,6 +292,16 @@ func (n Nil) AsString() (string, bool)         { return "", false }
 func (n Nil) AsBoolean() (bool, bool)          { return false, false }
 func (n Nil) IsNil() bool                      { return true }
 
+// JQ unmarshals jsonStr into fetch.J
+// and calls J.Q method with the pattern.
+func JQ(jsonStr, pattern string) J {
+	j, err := Unmarshal[J](jsonStr)
+	if err != nil {
+		return jnil
+	}
+	return j.Q(pattern)
+}
+
 func isJNil(v any) bool {
 	return v == nil || reflect.TypeOf(v) == typeFor[Nil]()
 }

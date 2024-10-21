@@ -193,6 +193,14 @@ category := j.Q(".category")
 fmt.Println("Pet's category object", category)
 fmt.Println("Pet's category name is", category.Q(".name"))
 ```
+
+`fetch.JQ` is a helper function to parse JSON into `fetch.J` and query it.
+```go
+jsonStr := `{"category": {"name":"dogs"}}`
+name := fetch.JQ(jsonStr, ".category.name")
+fmt.Println("Category name:", name)
+```
+
 To convert `fetch.J` to a basic value use one of `As*` methods
 
 | J Method  | Return type    |
@@ -205,28 +213,20 @@ To convert `fetch.J` to a basic value use one of `As*` methods
 
 E.g.
 ```go
-j, err := fetch.Unmarshal[fetch.J](`{"price": 14.99}`)
-if err != nil {
-    panic(err)
-}
-n, ok := j.Q(".price").AsNumber()
+n, ok := fetch.JQ(`{"price": 14.99}`, ".price").AsNumber()
 if !ok {
     // not a number
 }
 fmt.Printf("Price: %.2f\n", n) // n is a float64
 ```
 
-`fetch.J` is only `nil` when an error happens. Use `IsNil` to check the value on presence.
+Use `IsNil` to check the value on presence.
 ```go
-j, err := fetch.Unmarshal[fetch.J]("{}")
-if err != nil {
-    panic(err)
-}
-if j.Q(".price").IsNil() {
-    // key 'price' doesn't exist
+if fetch.JQ("{}", ".price").IsNil() {
+    fmt.Println("key 'price' doesn't exist")
 }
 // fields of unknown values are nil as well.
-if j.Q(".price.cents").IsNil() {
+if fetch.JQ("{}", ".price.cents").IsNil() {
     fmt.Println("'cents' of undefined is fine.")
 }
 ```
