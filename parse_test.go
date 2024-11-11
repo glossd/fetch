@@ -52,3 +52,14 @@ func TestUnmarshalJ(t *testing.T) {
 		t.Errorf("UnmarshalJ result mismatch, got=%s", r)
 	}
 }
+
+func TestParse(t *testing.T) {
+	num, ok := Parse(`{"num":1}`).Q("num").AsNumber()
+	if !ok || num != 1 {
+		t.Errorf("parsing failed")
+	}
+
+	if !Parse("{whatisthis?").IsNil() {
+		t.Errorf("wrong json should return nil")
+	}
+}

@@ -54,13 +54,23 @@ func requestWithBody[T any](url string, method string, body any, config ...Confi
 		config = []Config{{}}
 	}
 	config[0].Method = method
-	b, err := StringifySafe(body)
+	b, err := bodyToString(body)
 	if err != nil {
 		var t T
 		return t, nonHttpErr("invalid body: ", err)
 	}
 	config[0].Body = b
 	return Request[T](url, config...)
+}
+
+func bodyToString(v any) (string, error) {
+	if s, ok := v.(string); ok {
+		return s, nil
+	}
+	if s, ok := v.([]byte); ok {
+		return string(s), nil
+	}
+	return Marshal(v)
 }
 
 func Delete[T any](url string, config ...Config) (T, *Error) {

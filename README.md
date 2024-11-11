@@ -169,7 +169,7 @@ fmt.Println("First sold pet ", j.Q(".[0]"))
 `fetch.J` is an interface with `Q` method which provides easy access to any field.   
 Method `fetch.J#String()` returns JSON formatted string of the value. 
 ```go
-j, err := fetch.Unmarshal[fetch.J](`{
+j := fetch.Parse(`{
     "name": "Jason",
     "category": {
         "name":"dogs"
@@ -178,27 +178,17 @@ j, err := fetch.Unmarshal[fetch.J](`{
         {"name":"briard"}
     ]
 }`)
-if err != nil {
-    panic(err)
-}
 
 fmt.Println("Print the whole json:", j)
 fmt.Println("Pet's name is", j.Q(".name"))
 fmt.Println("Pet's category name is", j.Q(".category.name"))
 fmt.Println("First tag's name is", j.Q(".tags[0].name"))
-```
+``` 
 Method `fetch.J#Q` returns `fetch.J`. You can use the method `Q` on the result as well.
 ```go
 category := j.Q(".category")
 fmt.Println("Pet's category object", category)
 fmt.Println("Pet's category name is", category.Q(".name"))
-```
-
-`fetch.JQ` is a helper function to parse JSON into `fetch.J` and query it.
-```go
-jsonStr := `{"category": {"name":"dogs"}}`
-name := fetch.JQ(jsonStr, ".category.name")
-fmt.Println("Category name:", name)
 ```
 
 To convert `fetch.J` to a basic value use one of `As*` methods
@@ -213,7 +203,7 @@ To convert `fetch.J` to a basic value use one of `As*` methods
 
 E.g.
 ```go
-n, ok := fetch.JQ(`{"price": 14.99}`, ".price").AsNumber()
+n, ok := fetch.Parse(`{"price": 14.99}`).Q(".price").AsNumber()
 if !ok {
     // not a number
 }
@@ -222,11 +212,11 @@ fmt.Printf("Price: %.2f\n", n) // n is a float64
 
 Use `IsNil` to check the value on presence.
 ```go
-if fetch.JQ("{}", ".price").IsNil() {
+if fetch.Parse("{}").Q(".price").IsNil() {
     fmt.Println("key 'price' doesn't exist")
 }
 // fields of unknown values are nil as well.
-if fetch.JQ("{}", ".price.cents").IsNil() {
+if fetch.Parse("{}").Q(".price.cents").IsNil() {
     fmt.Println("'cents' of undefined is fine.")
 }
 ```
@@ -238,7 +228,7 @@ To convert any object into a string, which is treating public struct fields as d
 ```go
 str, err := fetch.Marhsal(map[string]string{"key":"value"})
 ```
-#### Unmarshal
+#### Unmarshalling
 Unmarshal will parse the input into the generic type.
 ```go
 type Pet struct {
@@ -249,6 +239,12 @@ if err != nil {
     panic(err)
 }
 fmt.Println(p.Name)
+```
+
+`fetch.Parse` unmarshalls JSON string into `fetch.J`, returning `fetch.Nil` instead of an error,
+which allows you to write one-liners. 
+```go
+fmt.Println(fetch.Parse(`{"name":"Jason"}`).Q(".name"))
 ```
 
 ### Global Setters

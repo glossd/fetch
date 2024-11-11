@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-var jnil Nil
-
 // J represents arbitrary JSON.
 // Depending on the JSON data type the queried `fetch.J` could be one of these types
 //
@@ -21,7 +19,7 @@ var jnil Nil
 // | fetch.B   | bool            | boolean                             |
 // | fetch.Nil | (nil) *struct{} | null, undefined, anything not found |
 type J interface {
-	// Q parses JQ-like patterns and returns according to the path value.
+	// Q parses jq-like patterns and returns according to the path value.
 	// E.g.
 	//{
 	//  "name": "Jason",
@@ -182,7 +180,7 @@ func parseValue(v any, remaining string, sep string) J {
 	panic("glossd/fetch panic, please report to github: array only expected . or [ ")
 }
 
-// F represents a JSON number
+// F represents JSON number.
 type F float64
 
 func (f F) Q(pattern string) J {
@@ -210,7 +208,7 @@ func (f F) AsString() (string, bool)         { return "", false }
 func (f F) AsBoolean() (bool, bool)          { return false, false }
 func (f F) IsNil() bool                      { return false }
 
-// S can't be a root value.
+// S represents JSON string.
 type S string
 
 func (s S) Q(pattern string) J {
@@ -268,10 +266,15 @@ func (b B) IsNil() bool                      { return false }
 
 type nilStruct struct{}
 
-// Nil represents any not found value. The pointer's value is always nil.
+// Nil represents any not found or null values. The pointer's value is always nil.
+// However, when returned from any method, it doesn't equal nil, because
+// a Go interface is not nil when it has a type.
 // It exists to prevent nil pointer dereference when retrieving Raw value.
-// Nil can't be a root value.
+// It can be the root in J tree, because null alone is a valid JSON.
 type Nil = *nilStruct
+
+// the single instance of Nil.
+var jnil Nil
 
 func (n Nil) Q(string) J {
 	return n
@@ -292,14 +295,11 @@ func (n Nil) AsString() (string, bool)         { return "", false }
 func (n Nil) AsBoolean() (bool, bool)          { return false, false }
 func (n Nil) IsNil() bool                      { return true }
 
-// JQ unmarshals jsonStr into fetch.J
+// Deprecated, use fetch.Parse(jsonStr).Q(pattern)
+// JQ parses jsonStr into fetch.J
 // and calls J.Q method with the pattern.
 func JQ(jsonStr, pattern string) J {
-	j, err := Unmarshal[J](jsonStr)
-	if err != nil {
-		return jnil
-	}
-	return j.Q(pattern)
+	return Parse(jsonStr).Q(pattern)
 }
 
 func isJNil(v any) bool {
