@@ -161,19 +161,25 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 		}
 	}()
 
+	var t T
+	typeOf := reflect.TypeOf(t)
+
+	if typeOf != nil && typeOf == typeFor[ResponseEmpty]() {
+		re := any(&t).(*ResponseEmpty)
+		re.Status = res.StatusCode
+		re.DuplicateHeaders = res.Header
+		return t, nil
+	}
+
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		var t T
 		return t, httpErr("read http body: ", err, res)
 	}
 
 	if firstDigit(res.StatusCode) != 2 {
-		var t T
 		return t, httpErr(fmt.Sprintf("http status=%d, body=", res.StatusCode), errors.New(string(body)), res)
 	}
 
-	var t T
-	typeOf := reflect.TypeOf(t)
 	if typeOf != nil && typeOf.PkgPath() == "github.com/glossd/fetch" && strings.HasPrefix(typeOf.Name(), "Response[") {
 		resType, ok := typeOf.FieldByName("Body")
 		if !ok {

@@ -108,6 +108,15 @@ if resp.Status == 200 {
     fmt.Println("Response headers", resp.Headers())
 }
 ```
+If you don't need the HTTP body you can use `fetch.ResponseEmpty`
+```go
+res, err := fetch.Delete[fetch.ResponseEmpty]("https://petstore.swagger.io/v2/pet/10")
+if err != nil {
+	panic(err)
+}
+fmt.Println("Status:", res.Status)
+fmt.Println("Headers:", res.Headers())
+```
 #### Error handling
 The error will contain the status and other http attributes
 ```go
