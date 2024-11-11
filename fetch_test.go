@@ -98,6 +98,19 @@ func TestRequest_ResponseT(t *testing.T) {
 	}
 }
 
+func TestRequest_ResponseEmpty(t *testing.T) {
+	res, err := Request[ResponseEmpty]("key.value")
+	if err != nil {
+		t.Error(err)
+	}
+	if res.Status != 200 {
+		t.Errorf("response status isn't 200")
+	}
+	if res.Headers()["Content-type"] != "application/json" {
+		t.Errorf("wrong headers")
+	}
+}
+
 func TestPostString(t *testing.T) {
 	j, err := Post[M]("echo.me", `{"hello":"whosthere"}`)
 	if err != nil {
