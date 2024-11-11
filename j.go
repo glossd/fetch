@@ -19,7 +19,7 @@ import (
 // | fetch.B   | bool            | boolean                             |
 // | fetch.Nil | (nil) *struct{} | null, undefined, anything not found |
 type J interface {
-	// Q parses JQ-like patterns and returns according to the path value.
+	// Q parses jq-like patterns and returns according to the path value.
 	// E.g.
 	//{
 	//  "name": "Jason",
@@ -295,14 +295,11 @@ func (n Nil) AsString() (string, bool)         { return "", false }
 func (n Nil) AsBoolean() (bool, bool)          { return false, false }
 func (n Nil) IsNil() bool                      { return true }
 
-// JQ unmarshals jsonStr into fetch.J
+// Deprecated, use fetch.Parse(jsonStr).Q(pattern)
+// JQ parses jsonStr into fetch.J
 // and calls J.Q method with the pattern.
 func JQ(jsonStr, pattern string) J {
-	j, err := Unmarshal[J](jsonStr)
-	if err != nil {
-		return jnil
-	}
-	return j.Q(pattern)
+	return Parse(jsonStr).Q(pattern)
 }
 
 func isJNil(v any) bool {
