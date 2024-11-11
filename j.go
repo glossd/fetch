@@ -180,7 +180,7 @@ func parseValue(v any, remaining string, sep string) J {
 	panic("glossd/fetch panic, please report to github: array only expected . or [ ")
 }
 
-// F represents a JSON number.
+// F represents JSON number.
 type F float64
 
 func (f F) Q(pattern string) J {
@@ -208,7 +208,7 @@ func (f F) AsString() (string, bool)         { return "", false }
 func (f F) AsBoolean() (bool, bool)          { return false, false }
 func (f F) IsNil() bool                      { return false }
 
-// S can't be the root of J tree. Type string alone is not a valid JSON.
+// S represents JSON string.
 type S string
 
 func (s S) Q(pattern string) J {

@@ -6,23 +6,19 @@ import (
 
 // Stringify tries to marshal v.
 // If an error happens, Stringify returns an empty string.
-func Stringify(v any) string {
-	s, err := StringifySafe(v)
-	if err != nil {
-		return ""
-	}
-	return s
-}
+// An empty string is not a valid JSON, indicating Stringify failed.
+//func Stringify(v any) string {
+//	s, err := StringifySafe(v)
+//	if err != nil {
+//		return ""
+//	}
+//	return s
+//}
 
 // StringifySafe tries to fix possible errors during marshalling and then calls Marshal.
 func StringifySafe(v any) (string, error) {
-	if s, ok := v.(string); ok {
-		return s, nil
-	}
-	if s, ok := v.([]byte); ok {
-		return string(s), nil
-	}
-	//todo add more edge cases e.g. channel fields
+	//todo skip unsupported types e.g. channel fields
+	// I can't rely on Go's encoding/json to escape unsupported fields.
 	return Marshal(v)
 }
 

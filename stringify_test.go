@@ -36,9 +36,3 @@ func TestMarshalStruct(t *testing.T) {
 		}
 	}
 }
-
-func TestStringify(t *testing.T) {
-	if Stringify(make(chan bool)) != "" {
-		t.Errorf("should have defaulted to an empty string")
-	}
-}
