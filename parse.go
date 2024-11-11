@@ -59,6 +59,8 @@ func UnmarshalInto(j string, v any) error {
 			rve.Set(reflect.ValueOf(B(u)))
 		case float64:
 			rve.Set(reflect.ValueOf(F(u)))
+		case string:
+			rve.Set(reflect.ValueOf(S(u)))
 		case map[string]any:
 			rve.Set(reflect.ValueOf(M(u)))
 		case []any:
