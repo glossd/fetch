@@ -6,12 +6,15 @@ import (
 	"reflect"
 )
 
-// todo
-//// Instead of panicking skips any invalid fields.
-//func Parse[T any](j string) T {
-//	var t T
-//	return t
-//}
+// Parse unmarshalls the JSON string into fetch.J without panicking.
+// If unmarshalling encounters an error, Parse returns fetch.Nil type.
+func Parse(s string) J {
+	j, err := Unmarshal[J](s)
+	if err != nil {
+		return jnil
+	}
+	return j
+}
 
 // UnmarshalJ sends J.String() to Unmarshal.
 func UnmarshalJ[T any](j J) (T, error) {

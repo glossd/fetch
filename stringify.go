@@ -4,12 +4,17 @@ import (
 	"github.com/glossd/fetch/internal/json"
 )
 
-// todo
-// Instead of panicking skips any invalid types or fields.
-//func Stringify(v any) string {
-//	return ""
-//}
+// Stringify tries to marshal v.
+// If an error happens, Stringify returns an empty string.
+func Stringify(v any) string {
+	s, err := StringifySafe(v)
+	if err != nil {
+		return ""
+	}
+	return s
+}
 
+// StringifySafe tries to fix possible errors during marshalling and then calls Marshal.
 func StringifySafe(v any) (string, error) {
 	if s, ok := v.(string); ok {
 		return s, nil
@@ -17,6 +22,7 @@ func StringifySafe(v any) (string, error) {
 	if s, ok := v.([]byte); ok {
 		return string(s), nil
 	}
+	//todo add more edge cases e.g. channel fields
 	return Marshal(v)
 }
 
