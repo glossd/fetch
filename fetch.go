@@ -164,7 +164,7 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 	var t T
 	typeOf := reflect.TypeOf(t)
 
-	if typeOf != nil && typeOf == typeFor[ResponseEmpty]() {
+	if typeOf != nil && typeOf == typeFor[ResponseEmpty]() && firstDigit(res.StatusCode) == 2 {
 		re := any(&t).(*ResponseEmpty)
 		re.Status = res.StatusCode
 		re.DuplicateHeaders = res.Header
