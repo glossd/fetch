@@ -111,7 +111,7 @@ func TestRequest_ResponseEmpty(t *testing.T) {
 	}
 
 	_, err = Request[ResponseEmpty]("400.error")
-	if err == nil || err.Unwrap().Error() != "Bad Request" {
+	if err == nil || err.Body != "Bad Request" {
 		t.Errorf("Even with ResponseEmpty error should read the body")
 	}
 }

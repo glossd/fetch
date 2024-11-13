@@ -78,7 +78,7 @@ fmt.Println("First tag's name is ", pet.Tags[0].Name) // handle index
 Post, Put and others have an additional argument for the request body of `any` type. 
 ```go
 type Pet struct {
-	Name string
+    Name string
 }
 type IdObj struct {
     Id int
@@ -112,17 +112,18 @@ If you don't need the HTTP body you can use `fetch.ResponseEmpty`
 ```go
 res, err := fetch.Delete[fetch.ResponseEmpty]("https://petstore.swagger.io/v2/pet/10")
 if err != nil {
-	panic(err)
+    panic(err)
 }
 fmt.Println("Status:", res.Status)
 fmt.Println("Headers:", res.Headers())
 ```
 #### Error handling
-The error will contain the status and other http attributes
+The error will contain the status and other http attributes. Any non-2xx response status is treated as an error.
 ```go
 _, err := fetch.Get[string]("https://petstore.swagger.io/v2/pet/-1")
 if err != nil {
-    fmt.Printf("Get pet failed with status %d: %s", err.Status, err.Msg)
+    fmt.Printf("Get pet failed: %s", err)
+    fmt.Printf("HTTP status=%d, headers=%v, body=%s", err.Status, err.Headers, err.Body)
 }
 ```
 ### Make request with Go Context
