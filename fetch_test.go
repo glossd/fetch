@@ -109,6 +109,28 @@ func TestRequest_ResponseEmpty(t *testing.T) {
 	if res.Headers()["Content-type"] != "application/json" {
 		t.Errorf("wrong headers")
 	}
+
+	_, err = Request[ResponseEmpty]("400.error")
+	if err == nil || err.Body != "Bad Request" {
+		t.Errorf("Even with ResponseEmpty error should read the body")
+	}
+}
+
+func TestRequest_Error(t *testing.T) {
+	_, err := Request[string]("400.error")
+	if err == nil {
+		t.Fatal(err)
+	}
+
+	if err.Status != 400 {
+		t.Errorf("expected status 400")
+	}
+	if err.Headers["Content-type"] != "text/plain" {
+		t.Errorf("expected headers")
+	}
+	if err.Body != "Bad Request" {
+		t.Errorf("expected body")
+	}
 }
 
 func TestPostString(t *testing.T) {

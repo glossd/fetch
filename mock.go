@@ -38,6 +38,8 @@ func mockDNS(url string, req *http.Request) *mockResponse {
 		return &mockResponse{Status: 200, Body: `[1, 2, 3]`}
 	case "my.ip":
 		return &mockResponse{Status: 200, Headers: map[string][]string{"Content-type": {"text/plain"}}, Body: `8.8.8.8`}
+	case "400.error":
+		return &mockResponse{Status: 400, Headers: map[string][]string{"Content-type": {"text/plain"}}, Body: `Bad Request`}
 	case "echo.me":
 		body, err := io.ReadAll(req.Body)
 		if err != nil {

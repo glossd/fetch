@@ -164,7 +164,7 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 	var t T
 	typeOf := reflect.TypeOf(t)
 
-	if typeOf != nil && typeOf == typeFor[ResponseEmpty]() {
+	if typeOf != nil && typeOf == typeFor[ResponseEmpty]() && firstDigit(res.StatusCode) == 2 {
 		re := any(&t).(*ResponseEmpty)
 		re.Status = res.StatusCode
 		re.DuplicateHeaders = res.Header
@@ -173,11 +173,11 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return t, httpErr("read http body: ", err, res)
+		return t, httpErr("read http body: ", err, res, nil)
 	}
 
 	if firstDigit(res.StatusCode) != 2 {
-		return t, httpErr(fmt.Sprintf("http status=%d, body=", res.StatusCode), errors.New(string(body)), res)
+		return t, httpErr(fmt.Sprintf("http status=%d, body=", res.StatusCode), errors.New(string(body)), res, body)
 	}
 
 	if typeOf != nil && typeOf.PkgPath() == "github.com/glossd/fetch" && strings.HasPrefix(typeOf.Name(), "Response[") {
@@ -190,7 +190,7 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 		err = parseBodyInto(body, resInstance)
 		if err != nil {
 			var t T
-			return t, httpErr("parsing JSON error: ", err, res)
+			return t, httpErr("parsing JSON error: ", err, res, body)
 		}
 
 		valueOf := reflect.Indirect(reflect.ValueOf(&t))
@@ -204,7 +204,7 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 	err = parseBodyInto(body, &t)
 	if err != nil {
 		var t T
-		return t, httpErr("parsing JSON error: ", err, res)
+		return t, httpErr("parsing JSON error: ", err, res, body)
 	}
 	return t, nil
 }

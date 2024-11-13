@@ -12,6 +12,7 @@ type Error struct {
 	Msg     string
 	Status  int
 	Headers map[string]string
+	Body    string
 }
 
 func (e *Error) Error() string {
@@ -32,11 +33,11 @@ func nonHttpErr(prefix string, err error) *Error {
 	return &Error{inner: err, Msg: prefix + err.Error()}
 }
 
-func httpErr(prefix string, err error, r *http.Response) *Error {
+func httpErr(prefix string, err error, r *http.Response, body []byte) *Error {
 	if r == nil {
 		return nonHttpErr(prefix, err)
 	}
-	return &Error{inner: err, Msg: prefix + err.Error(), Status: r.StatusCode, Headers: uniqueHeaders(r.Header)}
+	return &Error{inner: err, Msg: prefix + err.Error(), Status: r.StatusCode, Headers: uniqueHeaders(r.Header), Body: string(body)}
 }
 
 // JQError is returned from J.Q on invalid syntax.
