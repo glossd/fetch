@@ -167,6 +167,7 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 	if typeOf != nil && typeOf == typeFor[ResponseEmpty]() && firstDigit(res.StatusCode) == 2 {
 		re := any(&t).(*ResponseEmpty)
 		re.Status = res.StatusCode
+		re.Headers = uniqueHeaders(res.Header)
 		re.DuplicateHeaders = res.Header
 		return t, nil
 	}
@@ -196,6 +197,7 @@ func Request[T any](url string, config ...Config) (T, *Error) {
 		valueOf := reflect.Indirect(reflect.ValueOf(&t))
 		valueOf.FieldByName("Status").SetInt(int64(res.StatusCode))
 		valueOf.FieldByName("DuplicateHeaders").Set(reflect.ValueOf(res.Header))
+		valueOf.FieldByName("Headers").Set(reflect.ValueOf(uniqueHeaders(res.Header)))
 		valueOf.FieldByName("BodyBytes").SetBytes(body)
 		valueOf.FieldByName("Body").Set(reflect.ValueOf(resInstance).Elem())
 
