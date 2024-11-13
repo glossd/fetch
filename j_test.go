@@ -221,15 +221,6 @@ func TestJ_AsSecondValue(t *testing.T) {
 	}
 }
 
-func TestJQ(t *testing.T) {
-	if JQ(`{"key":"value"}`, ".key").String() != "value" {
-		t.Errorf("JQ mismatch")
-	}
-	if !JQ(`{`, ".key").IsNil() {
-		t.Errorf("JQ parsed invalid json")
-	}
-}
-
 func mustUnmarshal(s string) J {
 	j, err := Unmarshal[J](s)
 	if err != nil {

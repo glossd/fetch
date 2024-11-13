@@ -105,7 +105,7 @@ if resp.Status == 200 {
     fmt.Println("Found pet with id 1")
     // Response.Body is the Pet object.
     fmt.Println("Pet's name is ", resp.Body.Name)
-    fmt.Println("Response headers", resp.Headers())
+    fmt.Println("Response headers", resp.Headers)
 }
 ```
 If you don't need the HTTP body you can use `fetch.ResponseEmpty`
@@ -115,7 +115,7 @@ if err != nil {
     panic(err)
 }
 fmt.Println("Status:", res.Status)
-fmt.Println("Headers:", res.Headers())
+fmt.Println("Headers:", res.Headers)
 ```
 #### Error handling
 The error will contain the status and other http attributes. Any non-2xx response status is treated as an error.

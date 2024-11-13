@@ -295,13 +295,6 @@ func (n Nil) AsString() (string, bool)         { return "", false }
 func (n Nil) AsBoolean() (bool, bool)          { return false, false }
 func (n Nil) IsNil() bool                      { return true }
 
-// Deprecated, use fetch.Parse(jsonStr).Q(pattern)
-// JQ parses jsonStr into fetch.J
-// and calls J.Q method with the pattern.
-func JQ(jsonStr, pattern string) J {
-	return Parse(jsonStr).Q(pattern)
-}
-
 func isJNil(v any) bool {
 	return v == nil || reflect.TypeOf(v) == typeFor[Nil]()
 }

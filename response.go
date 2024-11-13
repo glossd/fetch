@@ -5,6 +5,7 @@ Response is a wrapper type for (generic) ReturnType to be used in
 the HTTP methods. It allows you to access HTTP attributes
 of the HTTP response and unmarshal the HTTP body.
 e.g.
+
 	type User struct {
 		FirstName string
 	}
@@ -17,25 +18,22 @@ e.g.
 	fmt.Println(res.Body.FirstName)
 */
 type Response[T any] struct {
-	Status           int
+	Status int
+	// HTTP headers are not unique.
+	// In the majority of the cases Headers is enough.
+	// Headers are filled with the last value from DuplicateHeaders.
 	DuplicateHeaders map[string][]string
+	Headers          map[string]string
 	Body             T
 	BodyBytes        []byte
-}
-
-func (r Response[T]) Headers() map[string]string {
-	return uniqueHeaders(r.DuplicateHeaders)
 }
 
 // ResponseEmpty is a special ResponseType that completely ignores the HTTP body.
 // Can be used as the (generic) ReturnType for any HTTP method.
 type ResponseEmpty struct {
 	Status           int
+	Headers          map[string]string
 	DuplicateHeaders map[string][]string
-}
-
-func (r ResponseEmpty) Headers() map[string]string {
-	return uniqueHeaders(r.DuplicateHeaders)
 }
 
 func uniqueHeaders(headers map[string][]string) map[string]string {

@@ -81,7 +81,7 @@ func TestRequest_ResponseT(t *testing.T) {
 		t.Errorf("wrong status")
 	}
 
-	if res.Headers()["Content-type"] != "application/json" {
+	if res.Headers["Content-type"] != "application/json" {
 		t.Errorf("wrong headers")
 	}
 
@@ -106,7 +106,7 @@ func TestRequest_ResponseEmpty(t *testing.T) {
 	if res.Status != 200 {
 		t.Errorf("response status isn't 200")
 	}
-	if res.Headers()["Content-type"] != "application/json" {
+	if res.Headers["Content-type"] != "application/json" {
 		t.Errorf("wrong headers")
 	}
 
