@@ -116,6 +116,23 @@ func TestRequest_ResponseEmpty(t *testing.T) {
 	}
 }
 
+func TestRequest_Error(t *testing.T) {
+	_, err := Request[string]("400.error")
+	if err == nil {
+		t.Fatal(err)
+	}
+
+	if err.Status != 400 {
+		t.Errorf("expected status 400")
+	}
+	if err.Headers["Content-type"] != "text/plain" {
+		t.Errorf("expected headers")
+	}
+	if err.Body != "Bad Request" {
+		t.Errorf("expected body")
+	}
+}
+
 func TestPostString(t *testing.T) {
 	j, err := Post[M]("echo.me", `{"hello":"whosthere"}`)
 	if err != nil {
