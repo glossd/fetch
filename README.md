@@ -118,8 +118,8 @@ fmt.Println("Status:", res.Status)
 fmt.Println("Headers:", res.Headers)
 ```
 #### Error handling
-Any non-2xx response status is treated as an error!
-If the error isn't nil, it can be safely cast to `*fetch.Error` which will contain the status and other HTTP attributes. 
+Any **non-2xx** response status is treated as an **error**!
+If the error isn't `nil` it can be safely cast to `*fetch.Error` which will contain the status and other HTTP attributes. 
 ```go
 _, err := fetch.Get[string]("https://petstore.swagger.io/v2/pet/-1")
 if err != nil {
