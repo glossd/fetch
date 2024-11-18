@@ -111,7 +111,7 @@ func TestRequest_ResponseEmpty(t *testing.T) {
 	}
 
 	_, err = Request[ResponseEmpty]("400.error")
-	if err == nil || err.Body != "Bad Request" {
+	if err == nil || err.(*Error).Body != "Bad Request" {
 		t.Errorf("Even with ResponseEmpty error should read the body")
 	}
 }
@@ -122,13 +122,14 @@ func TestRequest_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err.Status != 400 {
+	castErr := err.(*Error)
+	if castErr.Status != 400 {
 		t.Errorf("expected status 400")
 	}
-	if err.Headers["Content-type"] != "text/plain" {
+	if castErr.Headers["Content-type"] != "text/plain" {
 		t.Errorf("expected headers")
 	}
-	if err.Body != "Bad Request" {
+	if castErr.Body != "Bad Request" {
 		t.Errorf("expected body")
 	}
 }
@@ -150,5 +151,13 @@ func TestPostBytes(t *testing.T) {
 	}
 	if j["hello"] != "whosthere" {
 		t.Errorf("wrong post response")
+	}
+}
+
+func TestIssue20(t *testing.T) {
+	var err error
+	_, err = Get[J]("key.value")
+	if err != nil {
+		t.Errorf("err should be nil")
 	}
 }
