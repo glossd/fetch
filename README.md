@@ -118,12 +118,14 @@ fmt.Println("Status:", res.Status)
 fmt.Println("Headers:", res.Headers)
 ```
 #### Error handling
-The error will contain the status and other http attributes. Any non-2xx response status is treated as an error.
+Any **non-2xx** response status is treated as an **error**!
+If the error isn't `nil` it can be safely cast to `*fetch.Error` which will contain the status and other HTTP attributes. 
 ```go
 _, err := fetch.Get[string]("https://petstore.swagger.io/v2/pet/-1")
 if err != nil {
-    fmt.Printf("Get pet failed: %s", err)
-    fmt.Printf("HTTP status=%d, headers=%v, body=%s", err.Status, err.Headers, err.Body)
+    fmt.Printf("Get pet failed: %s\n", err)
+    ferr := err.(*fetch.Error)
+    fmt.Printf("HTTP status=%d, headers=%v, body=%s", ferr.Status, ferr.Headers, ferr.Body)
 }
 ```
 ### Make request with Go Context

@@ -24,7 +24,7 @@ type Config struct {
 	Headers map[string]string
 }
 
-func Get[T any](url string, config ...Config) (T, *Error) {
+func Get[T any](url string, config ...Config) (T, error) {
 	if len(config) == 0 {
 		config = []Config{{}}
 	}
@@ -33,23 +33,23 @@ func Get[T any](url string, config ...Config) (T, *Error) {
 }
 
 // GetJ is a wrapper for Get[fetch.J]
-func GetJ(url string, config ...Config) (J, *Error) {
+func GetJ(url string, config ...Config) (J, error) {
 	return Get[J](url, config...)
 }
 
-func Post[T any](url string, body any, config ...Config) (T, *Error) {
+func Post[T any](url string, body any, config ...Config) (T, error) {
 	return requestWithBody[T](url, http.MethodPost, body, config...)
 }
 
-func Put[T any](url string, body any, config ...Config) (T, *Error) {
+func Put[T any](url string, body any, config ...Config) (T, error) {
 	return requestWithBody[T](url, http.MethodPut, body, config...)
 }
 
-func Patch[T any](url string, body any, config ...Config) (T, *Error) {
+func Patch[T any](url string, body any, config ...Config) (T, error) {
 	return requestWithBody[T](url, http.MethodPatch, body, config...)
 }
 
-func requestWithBody[T any](url string, method string, body any, config ...Config) (T, *Error) {
+func requestWithBody[T any](url string, method string, body any, config ...Config) (T, error) {
 	if len(config) == 0 {
 		config = []Config{{}}
 	}
@@ -73,7 +73,7 @@ func bodyToString(v any) (string, error) {
 	return Marshal(v)
 }
 
-func Delete[T any](url string, config ...Config) (T, *Error) {
+func Delete[T any](url string, config ...Config) (T, error) {
 	if len(config) == 0 {
 		config = []Config{{}}
 	}
@@ -81,7 +81,7 @@ func Delete[T any](url string, config ...Config) (T, *Error) {
 	return Request[T](url, config...)
 }
 
-func Head[T any](url string, config ...Config) (T, *Error) {
+func Head[T any](url string, config ...Config) (T, error) {
 	if len(config) == 0 {
 		config = []Config{{}}
 	}
@@ -89,7 +89,7 @@ func Head[T any](url string, config ...Config) (T, *Error) {
 	return Request[T](url, config...)
 }
 
-func Options[T any](url string, config ...Config) (T, *Error) {
+func Options[T any](url string, config ...Config) (T, error) {
 	if len(config) == 0 {
 		config = []Config{{}}
 	}
@@ -97,7 +97,7 @@ func Options[T any](url string, config ...Config) (T, *Error) {
 	return Request[T](url, config...)
 }
 
-func Request[T any](url string, config ...Config) (T, *Error) {
+func Request[T any](url string, config ...Config) (T, error) {
 	var cfg Config
 	if len(config) > 0 {
 		cfg = config[0]

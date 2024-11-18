@@ -41,11 +41,11 @@ func TestRequestIntegration(t *testing.T) {
 		t.Fatalf("expected 303 status error")
 	}
 
-	if err.Status != 303 {
-		t.Fatalf("expected 303 status, got=%d", err.Status)
+	if err.(*Error).Status != 303 {
+		t.Fatalf("expected 303 status, got=%d", err.(*Error).Status)
 	}
-	if err.Headers["Access-Control-Allow-Origin"] != "noone.com" {
-		t.Fatalf("expected header, got=%s", err.Headers["Access-Control-Allow-Origin"])
+	if err.(*Error).Headers["Access-Control-Allow-Origin"] != "noone.com" {
+		t.Fatalf("expected header, got=%s", err.(*Error).Headers["Access-Control-Allow-Origin"])
 	}
 	if err.Error() != "http status=303, body=wrong neighborhood" {
 		t.Fatalf("wrong error message, got=%s", err)
