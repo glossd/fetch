@@ -284,3 +284,17 @@ type Config struct {
     Headers map[string]string
 }
 ```
+
+## Responding in HTTP handlers
+`fetch.Respond` is a convenient function to respond with JSON in standard HTTP handlers.
+```go
+http.HandleFunc("/pets", func(w http.ResponseWriter, r *http.Request) {
+    // it sends HTTP status and body, even if an error occurs. 
+    err := fetch.Respond(w, &Pet{Name: "Whiskers"})
+    if err != nil {
+        log.Println("failed to respond", err)
+    }
+})
+```
+It can be customized with the third optional argument `fetch.RespondConfig`.
+Error format can be customized with the global setter `fetch.SetRespondErrorFormat`
