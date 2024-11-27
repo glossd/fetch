@@ -308,7 +308,7 @@ you can call `fetch.RespondError` to maintain the same error format.
 http.HandleFunc("/pets", func(w http.ResponseWriter, r *http.Request) {
     pet, err := getPet()
     if err != nil {
-        fetch.RespondError(w, 400, err)	
+        fetch.RespondError(w, 400, err)
         return
     }
     // ...
