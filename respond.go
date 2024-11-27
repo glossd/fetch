@@ -99,6 +99,35 @@ func respond(w http.ResponseWriter, status int, bodyStr string, isJSON bool, cfg
 	return err
 }
 
+// RespondError sends HTTP response in the error format of Respond.
+// It should be used when your handler experiences an error
+// before marshalling and responding with fetch.Respond.
+func RespondError(w http.ResponseWriter, status int, errToRespond error, config ...RespondConfig) error {
+	var cfg RespondConfig
+	if len(config) > 0 {
+		cfg = config[0]
+	}
+	if !isValidHTTPStatus(status) {
+		rerr := RespondError(w, 500, errToRespond, config...)
+		if rerr != nil {
+			return rerr
+		}
+		return fmt.Errorf("RespondError, status is invalid")
+	}
+	w.WriteHeader(status)
+	for k, v := range cfg.Headers {
+		w.Header().Set(k, v)
+	}
+	if isRespondErrorFormatJSON {
+		w.Header().Set("Content-Type", "application/json")
+	} else {
+		w.Header().Set("Content-Type", "text/plain")
+	}
+	bodyStr := fmt.Sprintf(respondErrorFormat, errToRespond.Error())
+	_, err := w.Write([]byte(bodyStr))
+	return err
+}
+
 func isValidHTTPStatus(status int) bool {
 	return status >= 100 && status <= 599
 }

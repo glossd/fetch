@@ -300,5 +300,17 @@ http.HandleFunc("/pets", func(w http.ResponseWriter, r *http.Request) {
 })
 http.ListenAndServe(":8080", nil)
 ```
-It can be customized with the third optional argument `fetch.RespondConfig`.
-Error format can be customized with the `fetch.SetRespondErrorFormat` global setter.
+It can be customized with the third optional argument `fetch.RespondConfig`.  
+The error format can be customized with the `fetch.SetRespondErrorFormat` global setter.  
+If your HTTP handler encounters an error before sending a success response with `fetch.Respond`,
+you can call `fetch.RespondError` to maintain the same error format.
+```go
+http.HandleFunc("/pets", func(w http.ResponseWriter, r *http.Request) {
+    pet, err := getPet()
+    if err != nil {
+        fetch.RespondError(w, 400, err)
+        return
+    }
+    // ...
+})
+```
