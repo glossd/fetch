@@ -309,6 +309,7 @@ http.HandleFunc("/pets", func(w http.ResponseWriter, r *http.Request) {
     pet, err := getPet()
     if err != nil {
         fetch.RespondError(w, 400, err)	
+        return
     }
     // ...
 })
