@@ -22,7 +22,7 @@ $${\color{lightblue}fetch. \color{lightgreen}Method \color{lightblue}[ \color{cy
 
 ## Examples
 
-This is our `Pet` object from https://petstore.swagger.io/
+This is the `Pet` object from https://petstore.swagger.io/
 ```json
 {
   "id": 1,
@@ -288,6 +288,9 @@ type Config struct {
 ## Responding in HTTP handlers
 `fetch.Respond` is a convenient function to respond with JSON in standard HTTP handlers.
 ```go
+type Pet struct {
+    Name string
+}
 http.HandleFunc("/pets", func(w http.ResponseWriter, r *http.Request) {
     // it sends HTTP status and body, even if an error occurs. 
     err := fetch.Respond(w, &Pet{Name: "Whiskers"})
@@ -295,6 +298,7 @@ http.HandleFunc("/pets", func(w http.ResponseWriter, r *http.Request) {
         log.Println("failed to respond", err)
     }
 })
+http.ListenAndServe(":8080", nil)
 ```
 It can be customized with the third optional argument `fetch.RespondConfig`.
-Error format can be customized with the global setter `fetch.SetRespondErrorFormat`
+Error format can be customized with the `fetch.SetRespondErrorFormat` global setter.
