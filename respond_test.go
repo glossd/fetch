@@ -109,6 +109,15 @@ func TestSetRespondErrorFormat_InvalidFormats(t *testing.T) {
 	})
 }
 
+func TestRespondError(t *testing.T) {
+	mw := newMockWriter()
+	err := RespondError(mw, 400, fmt.Errorf("wrong"))
+	assert(t, err, nil)
+	assert(t, mw.status, 400)
+	assert(t, mw.Header().Get("Content-Type"), "application/json")
+	assert(t, string(mw.body), `{"error":"wrong"}`)
+}
+
 func assert[T comparable](t *testing.T, got, want T) {
 	t.Helper()
 
