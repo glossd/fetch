@@ -5,7 +5,7 @@
 <div align="center">Go HTTP client. Inspired by the simplicity of <a href="https://github.com/axios/axios">axios</a> and JSON handling in JS. Improved with generics.</div>
 
 ## Reasons
-1. I was tired of using `json` tags for each field. This package de-capitalizes the public fields in JSON parsing unless the `json` tag is specified.
+1. I was tired of writing `json:"fieldName,omitempty"` alongside each field. This package de-capitalizes the public fields in JSON parsing and omits empty ones unless `json` tag is specified.
 2. I always forget all the boilerplate code to make an HTTP request. This package provides a simple one-function call approach.
 
 
@@ -233,14 +233,15 @@ if fetch.Parse("{}").Q(".price.cents").IsNil() {
 }
 ```
 
-### JSON handling
+## JSON handling
 I have patched `encoding/json` package and attached to the `internal` folder, but you can use these functions.
-#### Marhsal
-To convert any object into a string, which is treating public struct fields as de-capitalized.
+### Marhsal
+Use it to convert any object into a string. It's the same as `json.Marshal`
+but it treats public struct fields as de-capitalized and omits empty fields by default unless `json` tag is specified. 
 ```go
 str, err := fetch.Marhsal(map[string]string{"key":"value"})
 ```
-#### Unmarshalling
+### Unmarshalling
 Unmarshal will parse the input into the generic type.
 ```go
 type Pet struct {

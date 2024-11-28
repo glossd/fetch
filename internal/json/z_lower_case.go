@@ -5,6 +5,7 @@ import (
 	"unicode/utf8"
 )
 
+// the first symbol is the double quote, the second one is the name
 func secondToLower(s string) string {
 	r, size := utf8.DecodeRuneInString(s)
 	if r == utf8.RuneError && size <= 1 {

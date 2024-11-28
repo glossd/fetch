@@ -692,7 +692,7 @@ FieldLoop:
 			fv = fv.Field(i)
 		}
 
-		if f.omitEmpty && isEmptyValue(fv) {
+		if (!f.tag && isEmptyValue(fv)) || (f.tag && f.omitEmpty && isEmptyValue(fv)) {
 			continue
 		}
 		e.WriteByte(next)
