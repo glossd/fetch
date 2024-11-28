@@ -5,7 +5,7 @@
 <div align="center">Go HTTP client. Inspired by the simplicity of <a href="https://github.com/axios/axios">axios</a> and JSON handling in JS. Improved with generics.</div>
 
 ## Reasons
-1. I was tired of writing `json:"fieldName,omitempty"` alongside each field. This package de-capitalizes the public fields in JSON parsing and omits empty fields unless `json` tag is specified.
+1. I was tired of writing `json:"fieldName,omitempty"` alongside each field. This package de-capitalizes the public fields in JSON parsing and omits empty ones unless `json` tag is specified.
 2. I always forget all the boilerplate code to make an HTTP request. This package provides a simple one-function call approach.
 
 
