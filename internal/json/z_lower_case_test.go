@@ -24,3 +24,33 @@ func TestSecondToLower(t *testing.T) {
 		}
 	}
 }
+
+func TestMarshalToLowerCase(t *testing.T) {
+	type TestStruct struct {
+		Name string
+	}
+	marsh, err := Marshal(TestStruct{Name: "hello"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(marsh)
+	expected := `{"name":"hello"}`
+	if got != expected {
+		t.Errorf("expected %s, got %s", expected, got)
+	}
+}
+
+func TestMarshalToUpperCaseWithTag(t *testing.T) {
+	type TestStruct struct {
+		Name string `json:"Name"`
+	}
+	marsh, err := Marshal(TestStruct{Name: "hello"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(marsh)
+	expected := `{"Name":"hello"}`
+	if got != expected {
+		t.Errorf("expected %s, got %s", expected, got)
+	}
+}
