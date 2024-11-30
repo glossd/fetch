@@ -291,8 +291,8 @@ type Config struct {
 It unmarshals the HTTP request body into the function argument, then marshals the returned value into the HTTP response body.
 ```go
 // accepts Pet object and returns Pet object
-http.HandleFunc("POST /pets", fetch.ToHandlerFunc(func(in Pet) Pet, error {
-    pet, err := savePet(pet)
+http.HandleFunc("POST /pets", fetch.ToHandlerFunc(func(in Pet) (*Pet, error) {
+    pet, err := savePet(in)
     if err != nil {
         log.Println("Couldn't create a pet", err)
         return nil, err
