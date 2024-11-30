@@ -16,7 +16,7 @@ func TestHandle(t *testing.T) {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/pets", ToHandlerFunc(func(in Pet) (Pet, error) {
+	mux.HandleFunc("/pets", ToHandlerFunc(func(in *Pet) (*Pet, error) {
 		if in.Name != "Lola" {
 			t.Errorf("request: name isn't Lola")
 		}

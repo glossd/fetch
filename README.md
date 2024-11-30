@@ -290,19 +290,28 @@ type Config struct {
 `fetch.ToHandlerFunc` allows you to convert `func(in) out, error` signature function into `http.HandlerFunc`.
 It unmarshals the HTTP request body into the function argument, then marshals the returned value into the HTTP response body.
 ```go
-type Pet struct {
-    Id int
-    Name string
-}
 // accepts Pet object and returns Pet object
 http.HandleFunc("POST /pets", fetch.ToHandlerFunc(func(in Pet) Pet, error {
-    pet, err := createPet(pet)
+    pet, err := savePet(pet)
     if err != nil {
         log.Println("Couldn't create a pet", err)
         return nil, err
     }
     return pet, nil
-})
+}))
 http.ListenAndServe(":8080", nil)
 ```
-The error format can be customized with the fetch.SetRespondErrorFormat global setter.
+If you don't need request or response body, use `fetch.Empty` to fit the function signature.
+```go
+http.HandleFunc("GET /pets/1", fetch.ToHandlerFunc(func(_ fetch.Empty) (Pet, error) {
+    return Pet{Id: 1}, nil
+}))
+```
+The error format can be customized with the `fetch.SetRespondErrorFormat` global setter.  
+To log http errors with your logger call `SetDefaultHandlerConfig`
+```go
+fetch.SetDefaultHandlerConfig(fetch.HandlerConfig{ErrorHook: func(err error) {
+    mylogger.Errorf("fetch http error: %s", err)
+}})
+```
+
