@@ -286,32 +286,32 @@ type Config struct {
 }
 ```
 
-## Responding in HTTP handlers
-`fetch.Respond` is a convenient function to respond with JSON in standard HTTP handlers.
+## HTTP handlers
+`fetch.ToHandlerFunc` allows you to convert `func(in) out, error` signature function into `http.HandlerFunc`.
+It unmarshals the HTTP request body into the function argument, then marshals the returned value into the HTTP response body.
 ```go
-type Pet struct {
-    Name string
-}
-http.HandleFunc("/pets", func(w http.ResponseWriter, r *http.Request) {
-    // it sends HTTP status and body, even if an error occurs. 
-    err := fetch.Respond(w, &Pet{Name: "Whiskers"})
+// accepts Pet object and returns Pet object
+http.HandleFunc("POST /pets", fetch.ToHandlerFunc(func(in Pet) Pet, error {
+    pet, err := savePet(pet)
     if err != nil {
-        log.Println("failed to respond", err)
+        log.Println("Couldn't create a pet", err)
+        return nil, err
     }
-})
+    return pet, nil
+}))
 http.ListenAndServe(":8080", nil)
 ```
-It can be customized with the third optional argument `fetch.RespondConfig`.  
-The error format can be customized with the `fetch.SetRespondErrorFormat` global setter.  
-If your HTTP handler encounters an error before sending a success response with `fetch.Respond`,
-you can call `fetch.RespondError` to maintain the same error format.
+If you don't need request or response body, use `fetch.Empty` to fit the function signature.
 ```go
-http.HandleFunc("/pets", func(w http.ResponseWriter, r *http.Request) {
-    pet, err := getPet()
-    if err != nil {
-        fetch.RespondError(w, 400, err)
-        return
-    }
-    // ...
-})
+http.HandleFunc("GET /pets/1", fetch.ToHandlerFunc(func(_ fetch.Empty) (Pet, error) {
+    return Pet{Id: 1}, nil
+}))
 ```
+The error format can be customized with the `fetch.SetRespondErrorFormat` global setter.  
+To log http errors with your logger call `SetDefaultHandlerConfig`
+```go
+fetch.SetDefaultHandlerConfig(fetch.HandlerConfig{ErrorHook: func(err error) {
+    mylogger.Errorf("fetch http error: %s", err)
+}})
+```
+

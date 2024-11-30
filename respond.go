@@ -74,6 +74,10 @@ func Respond(w http.ResponseWriter, body any, config ...RespondConfig) error {
 		bodyStr = string(s)
 		isString = true
 	}
+	if _, ok := body.(Empty); ok {
+		bodyStr = ""
+		isString = true
+	}
 	if !isString {
 		bodyStr, err = Marshal(body)
 		if err != nil {
