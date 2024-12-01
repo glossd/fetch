@@ -52,7 +52,7 @@ func TestToHandlerFunc_MultiplePathValue(t *testing.T) {
 	assert(t, mw.status, 200)
 }
 
-func TestToHandlerFunc_ParseInt(t *testing.T) {
+func TestToHandlerFunc_PathvalParseInt(t *testing.T) {
 	type Pet struct {
 		Id   int `pathval:"id"`
 		Name string
@@ -69,6 +69,38 @@ func TestToHandlerFunc_ParseInt(t *testing.T) {
 	assert(t, err, nil)
 	mux.ServeHTTP(mw, r)
 	assert(t, mw.status, 200)
+}
+
+func TestToHandlerFunc_GetWithPathvalAndNothingToUnmarshal(t *testing.T) {
+	type Pet struct {
+		Id int `pathval:"id"`
+	}
+	f := ToHandlerFunc(func(in Pet) (Empty, error) {
+		assert(t, in.Id, 1)
+		return Empty{}, nil
+	})
+	mw := newMockWriter()
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /ids/{id}", f)
+	r, err := http.NewRequest("GET", "/ids/1", bytes.NewBuffer([]byte(``)))
+	assert(t, err, nil)
+	mux.ServeHTTP(mw, r)
+	assert(t, mw.status, 200)
+}
+
+func TestToHandlerFunc_J(t *testing.T) {
+	f := ToHandlerFunc(func(in J) (J, error) {
+		assert(t, in.Q("name").String(), "Lola")
+		return M{"status": "ok"}, nil
+	})
+	mw := newMockWriter()
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /j", f)
+	r, err := http.NewRequest("POST", "/j", bytes.NewBuffer([]byte(`{"name":"Lola"}`)))
+	assert(t, err, nil)
+	mux.ServeHTTP(mw, r)
+	assert(t, mw.status, 200)
+	assert(t, string(mw.body), `{"status":"ok"}`)
 }
 
 func TestToHandlerFunc_Header(t *testing.T) {

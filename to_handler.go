@@ -8,6 +8,13 @@ import (
 	"strconv"
 )
 
+type handleTag = string
+
+const (
+	pathvalTag handleTag = "pathval"
+	headerTag  handleTag = "header"
+)
+
 var defaultHandlerConfig = HandlerConfig{
 	ErrorHook: func(err error) {
 		fmt.Printf("fetch.Handle failed to respond: %s\n", err)
@@ -32,7 +39,7 @@ type HandlerConfig struct {
 	// ErrorHook is called if an error happens while sending an HTTP response
 	ErrorHook func(err error)
 	// Middleware is applied before ToHandlerFunc processes the request.
-	// Return true if to end the request processing.
+	// Return true to end the request processing.
 	Middleware func(w http.ResponseWriter, r *http.Request) bool
 }
 
@@ -48,15 +55,15 @@ then marshals the returned value into the HTTP response body.
 To insert PathValue into a field of the unmarshaled entity, specify `pathval` tag
 to match the pattern's wildcard:
 
-type Pet struct {
-	Id int `pathval:"id"`
-}
+	type Pet struct {
+		Id int `pathval:"id"`
+	}
 
 `header` tag can be used to insert HTTP headers into struct field.
 
-type Pet struct {
-	Content string `header:"Content-Type"`
-}
+	type Pet struct {
+		Content string `header:"Content-Type"`
+	}
 */
 func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -75,14 +82,16 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 				}
 				return
 			}
-			in, err = Unmarshal[In](string(reqBody))
-			if err != nil {
-				cfg.ErrorHook(err)
-				err = RespondError(w, 400, err)
+			if len(reqBody) > 0 || shouldValidateInput(in) {
+				in, err = Unmarshal[In](string(reqBody))
 				if err != nil {
-					cfg.ErrorHook(err)
+					cfg.ErrorHook(fmt.Errorf("failed to unmarshal request body: %s", err))
+					err = RespondError(w, 400, err)
+					if err != nil {
+						cfg.ErrorHook(err)
+					}
+					return
 				}
-				return
 			}
 		}
 		in = enrichEntity(in, r)
@@ -101,12 +110,39 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 	}
 }
 
-func enrichEntity[T any](entity T, r *http.Request) T {
-	typeOf := reflect.TypeOf(entity)
-	if typeOf.Kind() == reflect.Pointer {
-		typeOf = reflect.ValueOf(entity).Elem().Type()
+// Input entity just might have a field with pathval tag
+// and nothing else, we don't need to unmarshal it.
+// In case it has some untagged fields, then it must be validated.
+func shouldValidateInput(v any) bool {
+	if t, ok := isStructType(v); ok {
+		for i := 0; i < t.NumField(); i++ {
+			tag := t.Field(i).Tag
+			if tag.Get(headerTag) == "" && tag.Get(pathvalTag) == "" {
+				return true
+			}
+		}
+		return false
+	} else {
+		return false
 	}
-	if typeOf.Kind() != reflect.Struct {
+}
+
+func isStructType(v any) (reflect.Type, bool) {
+	typeOf := reflect.TypeOf(v)
+	switch typeOf.Kind() {
+	case reflect.Pointer:
+		t := reflect.ValueOf(v).Elem().Type()
+		return t, t.Kind() == reflect.Struct
+	case reflect.Struct:
+		return typeOf, true
+	default:
+		return typeOf, false
+	}
+}
+
+func enrichEntity[T any](entity T, r *http.Request) T {
+	typeOf, ok := isStructType(entity)
+	if !ok {
 		return entity
 	}
 	var elem reflect.Value
@@ -117,10 +153,10 @@ func enrichEntity[T any](entity T, r *http.Request) T {
 	}
 	for i := 0; i < typeOf.NumField(); i++ {
 		field := typeOf.Field(i)
-		if header := field.Tag.Get("header"); header != "" {
+		if header := field.Tag.Get(headerTag); header != "" {
 			elem.Field(i).SetString(r.Header.Get(header))
 		}
-		if pathval := field.Tag.Get("pathval"); pathval != "" {
+		if pathval := field.Tag.Get(pathvalTag); pathval != "" {
 			pathvar := r.PathValue(pathval)
 			if pathvar != "" {
 				switch field.Type.Kind() {
