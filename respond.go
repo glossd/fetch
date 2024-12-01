@@ -87,7 +87,7 @@ func Respond(w http.ResponseWriter, body any, config ...RespondConfig) error {
 		bodyStr, err = Marshal(body)
 		if err != nil {
 			_ = respond(w, cfg.ErrorStatus, fmt.Sprintf(respondErrorFormat, err), isRespondErrorFormatJSON, cfg)
-			return err
+			return fmt.Errorf("failed to marshal response body: %s", err)
 		}
 	}
 

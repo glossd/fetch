@@ -286,18 +286,18 @@ type Config struct {
 }
 ```
 
-## HTTP handlers
-`fetch.ToHandlerFunc` accepts `func(in) out, error` signature function and converts it into `http.HandlerFunc`.
-It unmarshals the HTTP request body into the function argument, then marshals the returned value into the HTTP response body.
+## HTTP Handlers 
+`fetch.ToHandlerFunc` converts `func(in) (out, error)` signature function into `http.HandlerFunc`.
+It unmarshals the HTTP request body into the function argument then marshals the returned value into the HTTP response body.
 ```go
-// accepts Pet object and returns Pet object
+type Pet struct {
+    Name string
+}
 http.HandleFunc("POST /pets", fetch.ToHandlerFunc(func(in Pet) (*Pet, error) {
-    pet, err := savePet(in)
-    if err != nil {
-        log.Println("Couldn't create a pet", err)
-        return nil, err
+    if in.Name == "" {
+        return nil, fmt.Errorf("name can't be empty")
     }
-    return pet, nil
+    return &Pet{Name: in.Name}, nil
 }))
 http.ListenAndServe(":8080", nil)
 ```
@@ -335,6 +335,6 @@ fetch.SetDefaultHandlerConfig(fetch.HandlerConfig{Middleware: func(w http.Respon
         return true
     }
     return false
-},})
+}})
 ```
 
