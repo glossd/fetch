@@ -10,7 +10,7 @@
 
 
 ## Installing
-This is a zero-dependency package. It requires Go version 1.21 or above.
+This is a zero-dependency package. It requires Go version 1.22 or above.
 ```shell
 go get github.com/glossd/fetch
 ```
@@ -287,7 +287,8 @@ type Config struct {
 ```
 
 ## HTTP handlers
-`fetch.ToHandlerFunc` allows you to convert `func(in) out, error` signature function into `http.HandlerFunc`.
+With `fetch.ToHandlerFunc` you could completely omit 
+`fetch.ToHandlerFunc` accepts `func(in) out, error` signature function and converts it into `http.HandlerFunc`.
 It unmarshals the HTTP request body into the function argument, then marshals the returned value into the HTTP response body.
 ```go
 // accepts Pet object and returns Pet object
@@ -303,8 +304,21 @@ http.ListenAndServe(":8080", nil)
 ```
 If you don't need request or response body, use `fetch.Empty` to fit the function signature.
 ```go
-http.HandleFunc("GET /pets/1", fetch.ToHandlerFunc(func(_ fetch.Empty) (Pet, error) {
+http.HandleFunc("GET /default-pet", fetch.ToHandlerFunc(func(_ fetch.Empty) (Pet, error) {
     return Pet{Id: 1}, nil
+}))
+```
+If you need to access path value or HTTP header use tags below:
+```go
+type Pet struct {
+    Id int `pathval:"id"` // pathval must match the wildcard in the url pattern.
+    Auth string `header:"Authorization"`
+    Name string
+}
+http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in Pet) (fetch.Empty, error) {
+    fmt.Println("Pet's id from url:", in.Id)
+    fmt.Println("Authorization header:", in.Auth)
+    return fetch.Empty{}, nil
 }))
 ```
 The error format can be customized with the `fetch.SetRespondErrorFormat` global setter.  
@@ -313,5 +327,15 @@ To log http errors with your logger call `SetDefaultHandlerConfig`
 fetch.SetDefaultHandlerConfig(fetch.HandlerConfig{ErrorHook: func(err error) {
     mylogger.Errorf("fetch http error: %s", err)
 }})
+```
+To add middleware before handling request in `fetch.ToHandlerFunc`  
+```go 
+fetch.SetDefaultHandlerConfig(fetch.HandlerConfig{Middleware: func(w http.ResponseWriter, r *http.Request) bool {
+    if r.Header.Get("Authorization") == "" {
+        w.WriteHeader(401)
+        return true
+    }
+    return false
+},})
 ```
 
