@@ -52,7 +52,7 @@ ToHandlerFunc converts ApplyFunc into http.HandlerFunc,
 which can be used later in http.ServeMux#HandleFunc.
 It unmarshals the HTTP request body into the ApplyFunc argument and
 then marshals the returned value into the HTTP response body.
-To insert PathValue into a field of the unmarshaled entity, specify `pathval` tag
+To insert PathValue into a field of the input entity, specify `pathval` tag
 to match the pattern's wildcard:
 
 	type Pet struct {
