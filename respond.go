@@ -66,22 +66,18 @@ func Respond(w http.ResponseWriter, body any, config ...RespondConfig) error {
 		return err
 	}
 	var bodyStr string
-	var isString bool
-	if s, ok := body.(string); ok {
-		bodyStr = s
-		isString = true
-	}
-	if s, ok := body.([]byte); ok {
-		bodyStr = string(s)
-		isString = true
-	}
-	if _, ok := body.(Empty); ok {
-		bodyStr = ""
-		isString = true
-	}
-	if body == nil {
-		bodyStr = ""
-		isString = true
+	var isString = true
+	if body != nil {
+		switch u := body.(type) {
+		case string:
+			bodyStr = u
+		case []byte:
+			bodyStr = string(u)
+		case Empty, *Empty:
+			bodyStr = ""
+		default:
+			isString = false
+		}
 	}
 	if !isString {
 		bodyStr, err = Marshal(body)
