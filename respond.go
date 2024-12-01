@@ -39,6 +39,7 @@ type RespondConfig struct {
 	ErrorStatus int
 }
 
+// Deprecated, rely on ToHandlerFunc.
 // Respond tries to marshal the body and send HTTP response.
 // The HTTP response is sent even if an error occurs.
 // It should be used for the standard HTTP handlers.
@@ -78,6 +79,10 @@ func Respond(w http.ResponseWriter, body any, config ...RespondConfig) error {
 		bodyStr = ""
 		isString = true
 	}
+	if body == nil {
+		bodyStr = ""
+		isString = true
+	}
 	if !isString {
 		bodyStr, err = Marshal(body)
 		if err != nil {
@@ -103,6 +108,7 @@ func respond(w http.ResponseWriter, status int, bodyStr string, isJSON bool, cfg
 	return err
 }
 
+// Deprecated, rely on ToHandlerFunc.
 // RespondError sends HTTP response in the error format of Respond.
 // It should be used when your handler experiences an error
 // before marshalling and responding with fetch.Respond.

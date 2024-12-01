@@ -7,20 +7,22 @@ import (
 	"time"
 )
 
-func TestHandle(t *testing.T) {
+func TestToHandlerFunc(t *testing.T) {
 	mock = false
 	defer func() { mock = true }()
 	type Pet struct {
-		Id   int
-		Name string
+		Id    string `pathval:"id"`
+		Name  string
+		Saved bool
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/pets", ToHandlerFunc(func(in *Pet) (*Pet, error) {
+	mux.HandleFunc("/pets/{id}", ToHandlerFunc(func(in *Pet) (*Pet, error) {
+		assert(t, in.Id, "1")
 		if in.Name != "Lola" {
 			t.Errorf("request: name isn't Lola")
 		}
-		in.Id = 1
+		in.Saved = true
 		return in, nil
 	}))
 	server := &http.Server{Addr: ":7349", Handler: mux}
@@ -28,14 +30,9 @@ func TestHandle(t *testing.T) {
 	defer server.Shutdown(context.Background())
 	time.Sleep(time.Millisecond)
 
-	res, err := Post[Pet]("http://localhost:7349/pets", Pet{Name: "Lola"})
-	if err != nil {
-		t.Fatalf("Got error: %s", err)
-	}
-	if res.Id != 1 {
-		t.Errorf("response: expected id 1")
-	}
-	if res.Name != "Lola" {
-		t.Errorf("response: expected name Lola")
-	}
+	res, err := Post[Pet]("http://localhost:7349/pets/1", Pet{Name: "Lola"})
+	assert(t, err, nil)
+	assert(t, res.Id, "1")
+	assert(t, res.Name, "Lola")
+	assert(t, res.Saved, true)
 }

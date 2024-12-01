@@ -164,10 +164,10 @@ func Request[T any](url string, config ...Config) (T, error) {
 	var t T
 	typeOf := reflect.TypeOf(t)
 
-	if typeOf != nil && typeOf == typeFor[Empty]() && firstDigit(res.StatusCode) == 2 {
+	if typeOf != nil && typeOf == reflect.TypeFor[Empty]() && firstDigit(res.StatusCode) == 2 {
 		return t, nil
 	}
-	if typeOf != nil && typeOf == typeFor[ResponseEmpty]() && firstDigit(res.StatusCode) == 2 {
+	if typeOf != nil && typeOf == reflect.TypeFor[ResponseEmpty]() && firstDigit(res.StatusCode) == 2 {
 		re := any(&t).(*ResponseEmpty)
 		re.Status = res.StatusCode
 		re.Headers = uniqueHeaders(res.Header)
