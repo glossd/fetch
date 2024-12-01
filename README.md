@@ -313,7 +313,7 @@ If you need to access path value or HTTP header use tags below:
 type Pet struct {
     Id int `pathval:"id"` // pathval must match the wildcard in the url pattern.
     Auth string `header:"Authorization"`
-	Name string
+    Name string
 }
 http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in Pet) (fetch.Empty, error) {
     fmt.Println("Pet's id from url:", in.Id)
