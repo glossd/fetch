@@ -72,7 +72,7 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			return
 		}
 		var in In
-		if reflect.TypeFor[In]() != reflect.TypeOf(Empty{}) {
+		if st, _ := isStructType(in); st != reflect.TypeOf(Empty{}) {
 			reqBody, err := io.ReadAll(r.Body)
 			if err != nil {
 				cfg.ErrorHook(err)
@@ -129,8 +129,15 @@ func shouldValidateInput(v any) bool {
 
 func isStructType(v any) (reflect.Type, bool) {
 	typeOf := reflect.TypeOf(v)
+	if v == nil {
+		return typeOf, false
+	}
 	switch typeOf.Kind() {
 	case reflect.Pointer:
+		valueOf := reflect.ValueOf(v)
+		if valueOf.IsNil() {
+			return typeOf, false
+		}
 		t := reflect.ValueOf(v).Elem().Type()
 		return t, t.Kind() == reflect.Struct
 	case reflect.Struct:
