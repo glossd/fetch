@@ -45,14 +45,18 @@ ToHandlerFunc converts ApplyFunc into http.HandlerFunc,
 which can be used later in http.ServeMux#HandleFunc.
 It unmarshals the HTTP request body into the ApplyFunc argument and
 then marshals the returned value into the HTTP response body.
-To add PathValue into the unmarshaled entity, specify `pathval` tag
-to match the wildcard in the pattern:
+To insert PathValue into a field of the unmarshaled entity, specify `pathval` tag
+to match the pattern's wildcard:
 
-	type Pet struct {
-	    Id int `pathval:"id"`
-	}
+type Pet struct {
+	Id int `pathval:"id"`
+}
 
-`header` tag can be used to add HTTP headers.
+`header` tag can be used to insert HTTP headers into struct field.
+
+type Pet struct {
+	Content string `header:"Content-Type"`
+}
 */
 func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
