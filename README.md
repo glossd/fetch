@@ -287,7 +287,6 @@ type Config struct {
 ```
 
 ## HTTP handlers
-With `fetch.ToHandlerFunc` you could completely omit 
 `fetch.ToHandlerFunc` accepts `func(in) out, error` signature function and converts it into `http.HandlerFunc`.
 It unmarshals the HTTP request body into the function argument, then marshals the returned value into the HTTP response body.
 ```go
