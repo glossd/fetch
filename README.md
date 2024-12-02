@@ -304,18 +304,19 @@ http.ListenAndServe(":8080", nil)
 If you don't need request or response body, use `fetch.Empty` to fit the function signature.
 ```go
 http.HandleFunc("GET /default-pet", fetch.ToHandlerFunc(func(_ fetch.Empty) (Pet, error) {
-    return Pet{Id: 1}, nil
+    return Pet{Name: "Teddy"}, nil
 }))
 ```
 If you need to access path value or HTTP header use tags below:
 ```go
-type Pet struct {
-    Id int `pathval:"id"` // pathval must match the wildcard in the url pattern.
-    Auth string `header:"Authorization"`
-    Name string
+type PetRequest struct {
+    Ctx  context.Context // http.Request.Context() will be inserted into any field with context.Context type. 
+    ID   int `pathval:"id"` // {id} wildcard will be inserted into ID field.
+    Auth string `header:"Authorization"` // Authorization header will be inserted into Auth field.
+    Name string // untagged fields will be unmarshalled from the request body.
 }
-http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in Pet) (fetch.Empty, error) {
-    fmt.Println("Pet's id from url:", in.Id)
+http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in PetRequest) (fetch.Empty, error) {
+    fmt.Println("Pet's id from url:", in.ID)
     fmt.Println("Authorization header:", in.Auth)
     return fetch.Empty{}, nil
 }))
