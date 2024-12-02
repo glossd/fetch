@@ -2,6 +2,7 @@ package fetch
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"testing"
 )
@@ -116,6 +117,25 @@ func TestToHandlerFunc_Header(t *testing.T) {
 	mux.HandleFunc("POST /pets", f)
 	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{}`)))
 	r.Header.Set("Content", "mycontent")
+	assert(t, err, nil)
+	mux.ServeHTTP(mw, r)
+	assert(t, mw.status, 200)
+}
+
+func TestToHandlerFunc_Context(t *testing.T) {
+	type Pet struct {
+		Context context.Context
+		Name    string
+	}
+	f := ToHandlerFunc(func(in Pet) (Empty, error) {
+		assert(t, in.Context.Err(), nil)
+		assert(t, in.Name, "Lola")
+		return Empty{}, nil
+	})
+	mw := newMockWriter()
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /pets", f)
+	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{"name":"Lola"}`)))
 	assert(t, err, nil)
 	mux.ServeHTTP(mw, r)
 	assert(t, mw.status, 200)

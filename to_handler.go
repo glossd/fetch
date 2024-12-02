@@ -1,6 +1,7 @@
 package fetch
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -48,22 +49,24 @@ type HandlerConfig struct {
 type ApplyFunc[In any, Out any] func(in In) (Out, error)
 
 /*
-ToHandlerFunc converts ApplyFunc into http.HandlerFunc,
-which can be used later in http.ServeMux#HandleFunc.
-It unmarshals the HTTP request body into the ApplyFunc argument and
-then marshals the returned value into the HTTP response body.
-To insert PathValue into a field of the input entity, specify `pathval` tag
-to match the pattern's wildcard:
+	ToHandlerFunc converts ApplyFunc into http.HandlerFunc,
+	which can be used later in http.ServeMux#HandleFunc.
+	It unmarshals the HTTP request body into the ApplyFunc argument and
+	then marshals the returned value into the HTTP response body.
+	To insert PathValue into a field of the input entity, specify `pathval` tag
+	to match the pattern's wildcard:
 
 	type Pet struct {
 		Id int `pathval:"id"`
 	}
 
-`header` tag can be used to insert HTTP headers into struct field.
+`	header` tag can be used to insert HTTP headers into struct field.
 
 	type Pet struct {
 		Content string `header:"Content-Type"`
 	}
+
+	Any field with context.Context type will have http.Request.Context() inserted into.
 */
 func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +120,7 @@ func shouldValidateInput(v any) bool {
 	if t, ok := isStructType(v); ok {
 		for i := 0; i < t.NumField(); i++ {
 			tag := t.Field(i).Tag
-			if tag.Get(headerTag) == "" && tag.Get(pathvalTag) == "" {
+			if tag.Get(headerTag) == "" && tag.Get(pathvalTag) == "" && t.Field(i).Type != reflect.TypeFor[context.Context]() {
 				return true
 			}
 		}
@@ -160,6 +163,9 @@ func enrichEntity[T any](entity T, r *http.Request) T {
 	}
 	for i := 0; i < typeOf.NumField(); i++ {
 		field := typeOf.Field(i)
+		if field.Type == reflect.TypeFor[context.Context]() {
+			elem.Field(i).Set(reflect.ValueOf(r.Context()))
+		}
 		if header := field.Tag.Get(headerTag); header != "" {
 			elem.Field(i).SetString(r.Header.Get(header))
 		}
