@@ -18,7 +18,7 @@ func TestToHandlerFunc(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/pets/{id}", ToHandlerFunc(func(in Request[Pet]) (*Pet, error) {
-		if in.PathValues["id"] != "1" {
+		if in.PathValue("id") != "1" {
 			t.Errorf("expected path value")
 		}
 		if in.Body.Name != "Lola" {

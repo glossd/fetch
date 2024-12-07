@@ -1,0 +1,6 @@
+
+
+test21:
+	docker run --rm -v $$PWD:/usr/src/myapp -w /usr/src/myapp golang:1.21 go test ./...
+test22:
+	docker run --rm -v $$PWD:/usr/src/myapp -w /usr/src/myapp golang:1.22 go test ./...

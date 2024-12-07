@@ -109,6 +109,27 @@ func TestSetRespondErrorFormat_InvalidFormats(t *testing.T) {
 	})
 }
 
+func TestRespondResponseEmpty(t *testing.T) {
+	mw := newMockWriter()
+	err := Respond(mw, Response[Empty]{Status: 204})
+	assert(t, err, nil)
+	if mw.status != 204 || len(mw.body) > 0 {
+		t.Errorf("wrong writer: %+v", mw)
+	}
+}
+
+func TestRespondResponse(t *testing.T) {
+	type Pet struct {
+		Name string
+	}
+	mw := newMockWriter()
+	err := Respond(mw, Response[Pet]{Status: 201, Body: Pet{Name: "Lola"}})
+	assert(t, err, nil)
+	if mw.status != 201 || string(mw.body) != `{"name":"Lola"}` {
+		t.Errorf("wrong writer: %+v, %s", mw, string(mw.body))
+	}
+}
+
 func TestRespondError(t *testing.T) {
 	mw := newMockWriter()
 	err := RespondError(mw, 400, fmt.Errorf("wrong"))

@@ -3,6 +3,7 @@ package fetch
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 )
 
@@ -54,7 +55,17 @@ func Respond(w http.ResponseWriter, body any, config ...RespondConfig) error {
 	if cfg.ErrorStatus == 0 {
 		cfg.ErrorStatus = 500
 	}
-	// todo handle ResponseEmpty, Response
+	if isResponseWrapper(body) {
+		wrapper := reflect.ValueOf(body)
+		status := wrapper.FieldByName("Status").Int()
+		cfg.Status = int(status)
+		mapRange := wrapper.FieldByName("Headers").MapRange()
+		headers := make(map[string]string)
+		for mapRange.Next() {
+			headers[mapRange.Key().String()] = mapRange.Value().String()
+		}
+		cfg.Headers = headers
+	}
 	var err error
 	if !isValidHTTPStatus(cfg.Status) {
 		err := fmt.Errorf("RespondConfig.Status is invalid")
@@ -74,14 +85,18 @@ func Respond(w http.ResponseWriter, body any, config ...RespondConfig) error {
 			bodyStr = u
 		case []byte:
 			bodyStr = string(u)
-		case Empty, *Empty:
+		case Empty, *Empty, Response[Empty]:
 			bodyStr = ""
 		default:
 			isString = false
 		}
 	}
 	if !isString {
-		bodyStr, err = Marshal(body)
+		if isResponseWrapper(body) {
+			bodyStr, err = Marshal(reflect.ValueOf(body).FieldByName("Body").Interface())
+		} else {
+			bodyStr, err = Marshal(body)
+		}
 		if err != nil {
 			_ = respond(w, cfg.ErrorStatus, fmt.Sprintf(respondErrorFormat, err), isRespondErrorFormatJSON, cfg)
 			return fmt.Errorf("failed to marshal response body: %s", err)

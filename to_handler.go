@@ -8,13 +8,6 @@ import (
 	"strings"
 )
 
-type handleTag = string
-
-const (
-	pathvalTag handleTag = "pathval"
-	headerTag  handleTag = "header"
-)
-
 var defaultHandlerConfig = HandlerConfig{
 	ErrorHook: func(err error) {
 		fmt.Printf("fetch.Handle failed to respond: %s\n", err)
@@ -89,8 +82,7 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 				}
 			}
 			valueOf := reflect.Indirect(reflect.ValueOf(&in))
-			valueOf.FieldByName("Context").Set(reflect.ValueOf(r.Context()))
-			valueOf.FieldByName("PathValues").Set(reflect.ValueOf(extractPathValues(r)))
+			valueOf.FieldByName("Request").Set(reflect.ValueOf(r))
 			valueOf.FieldByName("Headers").Set(reflect.ValueOf(uniqueHeaders(r.Header)))
 			valueOf.FieldByName("Body").Set(reflect.ValueOf(resInstance).Elem())
 		} else if !isEmptyType(in) {
@@ -119,21 +111,6 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			cfg.ErrorHook(err)
 		}
 	}
-}
-
-func extractPathValues(r *http.Request) map[string]string {
-	parts := strings.Split(r.Pattern, "/")
-	result := make(map[string]string)
-	for _, part := range parts {
-		if len(part) > 2 && strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
-			wildcard := part[1 : len(part)-1]
-			v := r.PathValue(wildcard)
-			if v != "" {
-				result[wildcard] = v
-			}
-		}
-	}
-	return result
 }
 
 func isStructType(v any) (reflect.Type, bool) {

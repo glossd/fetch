@@ -1,5 +1,7 @@
 package fetch
 
+import "net/http"
+
 /*
 Response is a wrapper type for (generic) ReturnType to be used in
 the HTTP methods. It allows you to access HTTP attributes
@@ -18,22 +20,9 @@ e.g.
 	fmt.Println(res.Body.FirstName)
 */
 type Response[T any] struct {
-	Status int
-	// HTTP headers are not unique.
-	// In the majority of the cases Headers is enough.
-	// Headers are filled with the last value from DuplicateHeaders.
-	DuplicateHeaders map[string][]string
-	Headers          map[string]string
-	Body             T
-	BodyBytes        []byte
-}
-
-// ResponseEmpty is a special ResponseType that completely ignores the HTTP body.
-// Can be used as the (generic) ReturnType for any HTTP method.
-type ResponseEmpty struct {
-	Status           int
-	Headers          map[string]string
-	DuplicateHeaders map[string][]string
+	Status  int
+	Headers map[string]string
+	Body    T
 }
 
 func uniqueHeaders(headers map[string][]string) map[string]string {
@@ -47,6 +36,25 @@ func uniqueHeaders(headers map[string][]string) map[string]string {
 	return h
 }
 
+/*
+Request can be used in ApplyFunc as a wrapper
+for the input entity to access http attributes.
+e.g.
+
+	type Pet struct {
+		Name string
+	}
+	http.HandleFunc("POST /pets/{id}", fetch.ToHandlerFunc(func(in fetch.Request[Pet]) (fetch.Empty, error) {
+		in.Context()
+		return fetch.Empty{}, nil
+	}))
+*/
+type Request[T any] struct {
+	*http.Request
+	Headers map[string]string
+	Body    T
+}
+
 // Empty represents an empty response or request body, skipping JSON handling.
-// Can be used in any HTTP method or to fit the signature of ApplyFunc.
+// Can be used with the wrappers Response and Request or to fit the signature of ApplyFunc.
 type Empty struct{}

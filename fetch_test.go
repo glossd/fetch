@@ -99,7 +99,7 @@ func TestRequest_ResponseT(t *testing.T) {
 }
 
 func TestRequest_ResponseEmpty(t *testing.T) {
-	res, err := Do[ResponseEmpty]("key.value")
+	res, err := Do[Response[Empty]]("key.value")
 	if err != nil {
 		t.Error(err)
 	}
@@ -110,7 +110,7 @@ func TestRequest_ResponseEmpty(t *testing.T) {
 		t.Errorf("wrong headers")
 	}
 
-	_, err = Do[ResponseEmpty]("400.error")
+	_, err = Do[Response[Empty]]("400.error")
 	if err == nil || err.(*Error).Body != "Bad Request" {
 		t.Errorf("Even with ResponseEmpty error should read the body")
 	}

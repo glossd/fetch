@@ -164,14 +164,13 @@ func Do[T any](url string, config ...Config) (T, error) {
 	var t T
 	typeOf := reflect.TypeOf(t)
 
-	if typeOf != nil && typeOf == reflect.TypeFor[Empty]() && firstDigit(res.StatusCode) == 2 {
+	if isEmptyType(t) && firstDigit(res.StatusCode) == 2 {
 		return t, nil
 	}
-	if typeOf != nil && typeOf == reflect.TypeFor[ResponseEmpty]() && firstDigit(res.StatusCode) == 2 {
-		re := any(&t).(*ResponseEmpty)
+	if isResponseWithEmpty(t) && firstDigit(res.StatusCode) == 2 {
+		re := any(&t).(*Response[Empty])
 		re.Status = res.StatusCode
 		re.Headers = uniqueHeaders(res.Header)
-		re.DuplicateHeaders = res.Header
 		return t, nil
 	}
 
@@ -184,7 +183,7 @@ func Do[T any](url string, config ...Config) (T, error) {
 		return t, httpErr(fmt.Sprintf("http status=%d, body=", res.StatusCode), errors.New(string(body)), res, body)
 	}
 
-	if typeOf != nil && typeOf.PkgPath() == "github.com/glossd/fetch" && strings.HasPrefix(typeOf.Name(), "Response[") {
+	if isResponseWrapper(t) {
 		resType, ok := typeOf.FieldByName("Body")
 		if !ok {
 			panic("field Body is not found in Response")
@@ -199,9 +198,7 @@ func Do[T any](url string, config ...Config) (T, error) {
 
 		valueOf := reflect.Indirect(reflect.ValueOf(&t))
 		valueOf.FieldByName("Status").SetInt(int64(res.StatusCode))
-		valueOf.FieldByName("DuplicateHeaders").Set(reflect.ValueOf(res.Header))
 		valueOf.FieldByName("Headers").Set(reflect.ValueOf(uniqueHeaders(res.Header)))
-		valueOf.FieldByName("BodyBytes").SetBytes(body)
 		valueOf.FieldByName("Body").Set(reflect.ValueOf(resInstance).Elem())
 
 		return t, nil
@@ -255,6 +252,17 @@ func firstDigit(n int) int {
 	for i = n; i >= 10; i = i / 10 {
 	}
 	return i
+}
+
+func isResponseWrapper(v any) bool {
+	if v == nil {
+		return false
+	}
+	typeOf := reflect.TypeOf(v)
+	return typeOf.PkgPath() == "github.com/glossd/fetch" && strings.HasPrefix(typeOf.Name(), "Response[")
+}
+func isResponseWithEmpty(v any) bool {
+	return reflect.TypeOf(v) == reflect.TypeFor[Response[Empty]]()
 }
 
 func hasContentType(c Config) bool {

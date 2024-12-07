@@ -313,8 +313,8 @@ type Pet struct {
     Name string
 }
 http.HandleFunc("POST /pets/{id}", fetch.ToHandlerFunc(func(in fetch.Request[Pet]) (fetch.Empty, error) {
-    fmt.Println("Pet's id from url:", in.PathValues["id"])
-    fmt.Println("Request context:", in.Context)
+    fmt.Println("Pet's id from url:", in.PathValue("id"))
+    fmt.Println("Request context:", in.Context())
     fmt.Println("Authorization header:", in.Headers["Authorization"])
 	fmt.Println("Pet:", in.Body)
     return fetch.Empty{}, nil
