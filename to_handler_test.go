@@ -2,7 +2,6 @@ package fetch
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"testing"
 )
@@ -34,14 +33,14 @@ func TestToHandlerFunc_EmptyOut(t *testing.T) {
 
 func TestToHandlerFunc_MultiplePathValue(t *testing.T) {
 	type Pet struct {
-		Category string `pathval:"category"`
-		Id       string `pathval:"id"`
+		Category string
+		Id       string
 		Name     string
 	}
-	f := ToHandlerFunc(func(in Pet) (Empty, error) {
-		assert(t, in.Category, "cats")
-		assert(t, in.Id, "1")
-		assert(t, in.Name, "Charles")
+	f := ToHandlerFunc(func(in Request[Pet]) (Empty, error) {
+		if in.PathValues["category"] != "cats" || in.PathValues["id"] != "1" {
+			t.Errorf("wrong path value, got %v", in)
+		}
 		return Empty{}, nil
 	})
 	mw := newMockWriter()
@@ -53,40 +52,20 @@ func TestToHandlerFunc_MultiplePathValue(t *testing.T) {
 	assert(t, mw.status, 200)
 }
 
-func TestToHandlerFunc_PathvalParseInt(t *testing.T) {
-	type Pet struct {
-		Id   int `pathval:"id"`
-		Name string
-	}
-	f := ToHandlerFunc(func(in Pet) (Empty, error) {
-		assert(t, in.Id, 1)
-		assert(t, in.Name, "Charles")
-		return Empty{}, nil
-	})
+func TestToHandlerFunc_ExtractPathValues(t *testing.T) {
 	mw := newMockWriter()
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /ids/{id}", f)
-	r, err := http.NewRequest("POST", "/ids/1", bytes.NewBuffer([]byte(`{"name":"Charles"}`)))
-	assert(t, err, nil)
-	mux.ServeHTTP(mw, r)
-	assert(t, mw.status, 200)
-}
-
-func TestToHandlerFunc_GetWithPathvalAndNothingToUnmarshal(t *testing.T) {
-	type Pet struct {
-		Id int `pathval:"id"`
-	}
-	f := ToHandlerFunc(func(in Pet) (Empty, error) {
-		assert(t, in.Id, 1)
-		return Empty{}, nil
+	mux.HandleFunc("POST /categories/{category}/ids/{id}", func(w http.ResponseWriter, r *http.Request) {
+		res := extractPathValues(r)
+		if len(res) != 2 || res["category"] != "cats" || res["id"] != "1" {
+			t.Errorf("extractPathValues(r) got: %+v", res)
+		}
+		w.WriteHeader(422)
 	})
-	mw := newMockWriter()
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /ids/{id}", f)
-	r, err := http.NewRequest("GET", "/ids/1", bytes.NewBuffer([]byte(``)))
+	r, err := http.NewRequest("POST", "/categories/cats/ids/1", bytes.NewBuffer([]byte(`{"name":"Charles"}`)))
 	assert(t, err, nil)
 	mux.ServeHTTP(mw, r)
-	assert(t, mw.status, 200)
+	assert(t, mw.status, 422)
 }
 
 func TestToHandlerFunc_J(t *testing.T) {
@@ -105,11 +84,10 @@ func TestToHandlerFunc_J(t *testing.T) {
 }
 
 func TestToHandlerFunc_Header(t *testing.T) {
-	type Pet struct {
-		Content string `header:"Content"`
-	}
-	f := ToHandlerFunc(func(in Pet) (Empty, error) {
-		assert(t, in.Content, "mycontent")
+	f := ToHandlerFunc(func(in Request[Empty]) (Empty, error) {
+		if in.Headers["Content"] != "mycontent" {
+			t.Errorf("wrong in %v", in)
+		}
 		return Empty{}, nil
 	})
 	mw := newMockWriter()
@@ -123,13 +101,8 @@ func TestToHandlerFunc_Header(t *testing.T) {
 }
 
 func TestToHandlerFunc_Context(t *testing.T) {
-	type Pet struct {
-		Context context.Context
-		Name    string
-	}
-	f := ToHandlerFunc(func(in Pet) (Empty, error) {
+	f := ToHandlerFunc(func(in Request[Empty]) (Empty, error) {
 		assert(t, in.Context.Err(), nil)
-		assert(t, in.Name, "Lola")
 		return Empty{}, nil
 	})
 	mw := newMockWriter()

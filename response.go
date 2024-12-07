@@ -47,6 +47,6 @@ func uniqueHeaders(headers map[string][]string) map[string]string {
 	return h
 }
 
-// Empty represents an empty request body or empty response body, skipping JSON handling.
-// Can be used to fit the signature of ApplyFunc.
+// Empty represents an empty response or request body, skipping JSON handling.
+// Can be used in any HTTP method or to fit the signature of ApplyFunc.
 type Empty struct{}

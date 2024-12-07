@@ -29,7 +29,7 @@ func Get[T any](url string, config ...Config) (T, error) {
 		config = []Config{{}}
 	}
 	config[0].Method = http.MethodGet
-	return Request[T](url, config...)
+	return Do[T](url, config...)
 }
 
 // GetJ is a wrapper for Get[fetch.J]
@@ -60,7 +60,7 @@ func requestWithBody[T any](url string, method string, body any, config ...Confi
 		return t, nonHttpErr("invalid body: ", err)
 	}
 	config[0].Body = b
-	return Request[T](url, config...)
+	return Do[T](url, config...)
 }
 
 func bodyToString(v any) (string, error) {
@@ -78,7 +78,7 @@ func Delete[T any](url string, config ...Config) (T, error) {
 		config = []Config{{}}
 	}
 	config[0].Method = http.MethodDelete
-	return Request[T](url, config...)
+	return Do[T](url, config...)
 }
 
 func Head[T any](url string, config ...Config) (T, error) {
@@ -86,7 +86,7 @@ func Head[T any](url string, config ...Config) (T, error) {
 		config = []Config{{}}
 	}
 	config[0].Method = http.MethodHead
-	return Request[T](url, config...)
+	return Do[T](url, config...)
 }
 
 func Options[T any](url string, config ...Config) (T, error) {
@@ -94,10 +94,10 @@ func Options[T any](url string, config ...Config) (T, error) {
 		config = []Config{{}}
 	}
 	config[0].Method = http.MethodOptions
-	return Request[T](url, config...)
+	return Do[T](url, config...)
 }
 
-func Request[T any](url string, config ...Config) (T, error) {
+func Do[T any](url string, config ...Config) (T, error) {
 	var cfg Config
 	if len(config) > 0 {
 		cfg = config[0]

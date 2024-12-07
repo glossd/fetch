@@ -11,19 +11,20 @@ func TestToHandlerFunc(t *testing.T) {
 	mock = false
 	defer func() { mock = true }()
 	type Pet struct {
-		Id    string `pathval:"id"`
+		Id    string
 		Name  string
 		Saved bool
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/pets/{id}", ToHandlerFunc(func(in *Pet) (*Pet, error) {
-		assert(t, in.Id, "1")
-		if in.Name != "Lola" {
+	mux.HandleFunc("/pets/{id}", ToHandlerFunc(func(in Request[Pet]) (*Pet, error) {
+		if in.PathValues["id"] != "1" {
+			t.Errorf("expected path value")
+		}
+		if in.Body.Name != "Lola" {
 			t.Errorf("request: name isn't Lola")
 		}
-		in.Saved = true
-		return in, nil
+		return &Pet{Name: "Lola", Id: "1", Saved: true}, nil
 	}))
 	server := &http.Server{Addr: ":7349", Handler: mux}
 	go server.ListenAndServe()

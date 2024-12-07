@@ -13,7 +13,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestRequestString(t *testing.T) {
-	res, err := Request[string]("my.ip")
+	res, err := Do[string]("my.ip")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,7 +23,7 @@ func TestRequestString(t *testing.T) {
 }
 
 func TestRequestBytes(t *testing.T) {
-	res, err := Request[[]byte]("array.int")
+	res, err := Do[[]byte]("array.int")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func TestRequestBytes(t *testing.T) {
 }
 
 func TestRequestArray(t *testing.T) {
-	res, err := Request[[]int]("array.int")
+	res, err := Do[[]int]("array.int")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestRequestArray(t *testing.T) {
 }
 
 func TestRequestAny(t *testing.T) {
-	res, err := Request[any]("key.value")
+	res, err := Do[any]("key.value")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestRequestAny(t *testing.T) {
 		t.Errorf("map wasn't parsed")
 	}
 
-	res2, err := Request[any]("array.int")
+	res2, err := Do[any]("array.int")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestRequest_ResponseT(t *testing.T) {
 	type TestStruct struct {
 		Key string
 	}
-	res, err := Request[Response[TestStruct]]("key.value")
+	res, err := Do[Response[TestStruct]]("key.value")
 	if err != nil {
 		t.Error(err)
 	}
@@ -89,7 +89,7 @@ func TestRequest_ResponseT(t *testing.T) {
 		t.Errorf("wrong body")
 	}
 
-	res2, err := Request[Response[string]]("my.ip")
+	res2, err := Do[Response[string]]("my.ip")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func TestRequest_ResponseT(t *testing.T) {
 }
 
 func TestRequest_ResponseEmpty(t *testing.T) {
-	res, err := Request[ResponseEmpty]("key.value")
+	res, err := Do[ResponseEmpty]("key.value")
 	if err != nil {
 		t.Error(err)
 	}
@@ -110,14 +110,14 @@ func TestRequest_ResponseEmpty(t *testing.T) {
 		t.Errorf("wrong headers")
 	}
 
-	_, err = Request[ResponseEmpty]("400.error")
+	_, err = Do[ResponseEmpty]("400.error")
 	if err == nil || err.(*Error).Body != "Bad Request" {
 		t.Errorf("Even with ResponseEmpty error should read the body")
 	}
 }
 
 func TestRequest_Error(t *testing.T) {
-	_, err := Request[string]("400.error")
+	_, err := Do[string]("400.error")
 	if err == nil {
 		t.Fatal(err)
 	}

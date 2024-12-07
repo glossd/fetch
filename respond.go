@@ -54,6 +54,7 @@ func Respond(w http.ResponseWriter, body any, config ...RespondConfig) error {
 	if cfg.ErrorStatus == 0 {
 		cfg.ErrorStatus = 500
 	}
+	// todo handle ResponseEmpty, Response
 	var err error
 	if !isValidHTTPStatus(cfg.Status) {
 		err := fmt.Errorf("RespondConfig.Status is invalid")
