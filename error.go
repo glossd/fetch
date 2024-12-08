@@ -88,5 +88,5 @@ func jqerr(format string, a ...any) *JQError {
 }
 
 func IsJQError(v any) bool {
-	return reflect.TypeOf(v) == reflect.TypeFor[*JQError]()
+	return reflect.TypeOf(v) == reflectTypeFor[*JQError]()
 }

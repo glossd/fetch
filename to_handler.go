@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"reflect"
-	"strings"
 )
 
 var defaultHandlerConfig = HandlerConfig{
@@ -111,37 +110,4 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			cfg.ErrorHook(err)
 		}
 	}
-}
-
-func isStructType(v any) (reflect.Type, bool) {
-	typeOf := reflect.TypeOf(v)
-	if v == nil {
-		return typeOf, false
-	}
-	switch typeOf.Kind() {
-	case reflect.Pointer:
-		valueOf := reflect.ValueOf(v)
-		if valueOf.IsNil() {
-			return typeOf, false
-		}
-		t := reflect.ValueOf(v).Elem().Type()
-		return t, t.Kind() == reflect.Struct
-	case reflect.Struct:
-		return typeOf, true
-	default:
-		return typeOf, false
-	}
-}
-
-func isRequestWrapper(v any) bool {
-	typeOf := reflect.TypeOf(v)
-	return typeOf != nil && typeOf.PkgPath() == "github.com/glossd/fetch" && strings.HasPrefix(typeOf.Name(), "Request[")
-}
-
-func isEmptyType(v any) bool {
-	st, ok := isStructType(v)
-	if !ok {
-		return false
-	}
-	return st == reflect.TypeOf(Empty{})
 }

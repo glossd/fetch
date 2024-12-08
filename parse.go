@@ -48,7 +48,7 @@ func UnmarshalInto(j string, v any) error {
 
 	rve := rv.Elem()
 	var isAny = rve.Kind() == reflect.Interface && rve.NumMethod() == 0
-	if isAny || rve.Type() == reflect.TypeFor[J]() {
+	if isAny || rve.Type() == reflectTypeFor[J]() {
 		var a any
 		err := json.Unmarshal([]byte(j), &a)
 		if err != nil {

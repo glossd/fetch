@@ -1,6 +1,10 @@
 package fetch
 
-import "net/http"
+import (
+	"net/http"
+	"reflect"
+	"strings"
+)
 
 /*
 Response is a wrapper type for (generic) ReturnType to be used in
@@ -58,3 +62,56 @@ type Request[T any] struct {
 // Empty represents an empty response or request body, skipping JSON handling.
 // Can be used with the wrappers Response and Request or to fit the signature of ApplyFunc.
 type Empty struct{}
+
+func isResponseWrapper(v any) bool {
+	if v == nil {
+		return false
+	}
+	typeOf := reflect.TypeOf(v)
+	return typeOf.PkgPath() == "github.com/glossd/fetch" && strings.HasPrefix(typeOf.Name(), "Response[")
+}
+func isResponseWithEmpty(v any) bool {
+	return reflect.TypeOf(v) == reflectTypeFor[Response[Empty]]()
+}
+
+func isRequestWrapper(v any) bool {
+	typeOf := reflect.TypeOf(v)
+	return typeOf != nil && typeOf.PkgPath() == "github.com/glossd/fetch" && strings.HasPrefix(typeOf.Name(), "Request[")
+}
+
+func isEmptyType(v any) bool {
+	st, ok := isStructType(v)
+	if !ok {
+		return false
+	}
+	return st == reflect.TypeOf(Empty{})
+}
+
+func isStructType(v any) (reflect.Type, bool) {
+	typeOf := reflect.TypeOf(v)
+	if v == nil {
+		return typeOf, false
+	}
+	switch typeOf.Kind() {
+	case reflect.Pointer:
+		valueOf := reflect.ValueOf(v)
+		if valueOf.IsNil() {
+			return typeOf, false
+		}
+		t := reflect.ValueOf(v).Elem().Type()
+		return t, t.Kind() == reflect.Struct
+	case reflect.Struct:
+		return typeOf, true
+	default:
+		return typeOf, false
+	}
+}
+
+// reflect.TypeFor was introduced in go1.22
+func reflectTypeFor[T any]() reflect.Type {
+	var v T
+	if t := reflect.TypeOf(v); t != nil {
+		return t
+	}
+	return reflect.TypeOf((*T)(nil)).Elem()
+}

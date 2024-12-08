@@ -296,7 +296,7 @@ func (n Nil) AsBoolean() (bool, bool)          { return false, false }
 func (n Nil) IsNil() bool                      { return true }
 
 func isJNil(v any) bool {
-	return v == nil || reflect.TypeOf(v) == reflect.TypeFor[Nil]()
+	return v == nil || reflect.TypeOf(v) == reflectTypeFor[Nil]()
 }
 
 func nextSep(pattern string) (int, string) {

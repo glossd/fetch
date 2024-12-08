@@ -254,17 +254,6 @@ func firstDigit(n int) int {
 	return i
 }
 
-func isResponseWrapper(v any) bool {
-	if v == nil {
-		return false
-	}
-	typeOf := reflect.TypeOf(v)
-	return typeOf.PkgPath() == "github.com/glossd/fetch" && strings.HasPrefix(typeOf.Name(), "Response[")
-}
-func isResponseWithEmpty(v any) bool {
-	return reflect.TypeOf(v) == reflect.TypeFor[Response[Empty]]()
-}
-
 func hasContentType(c Config) bool {
 	for k := range c.Headers {
 		if strings.ToLower(k) == "content-type" {

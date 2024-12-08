@@ -17,10 +17,7 @@ func TestToHandlerFunc(t *testing.T) {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/pets/{id}", ToHandlerFunc(func(in Request[Pet]) (*Pet, error) {
-		if in.PathValue("id") != "1" {
-			t.Errorf("expected path value")
-		}
+	mux.HandleFunc("/pets", ToHandlerFunc(func(in Request[Pet]) (*Pet, error) {
 		if in.Body.Name != "Lola" {
 			t.Errorf("request: name isn't Lola")
 		}
@@ -31,7 +28,7 @@ func TestToHandlerFunc(t *testing.T) {
 	defer server.Shutdown(context.Background())
 	time.Sleep(time.Millisecond)
 
-	res, err := Post[Pet]("http://localhost:7349/pets/1", Pet{Name: "Lola"})
+	res, err := Post[Pet]("http://localhost:7349/pets", Pet{Name: "Lola"})
 	assert(t, err, nil)
 	assert(t, res.Id, "1")
 	assert(t, res.Name, "Lola")

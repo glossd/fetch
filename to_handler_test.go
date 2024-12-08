@@ -31,26 +31,28 @@ func TestToHandlerFunc_EmptyOut(t *testing.T) {
 	assert(t, string(mw.body), ``)
 }
 
-func TestToHandlerFunc_MultiplePathValue(t *testing.T) {
-	type Pet struct {
-		Category string
-		Id       string
-		Name     string
-	}
-	f := ToHandlerFunc(func(in Request[Pet]) (Empty, error) {
-		if in.PathValue("category") != "cats" || in.PathValue("id") != "1" {
-			t.Errorf("wrong path value, got %v", in)
-		}
-		return Empty{}, nil
-	})
-	mw := newMockWriter()
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /categories/{category}/ids/{id}", f)
-	r, err := http.NewRequest("POST", "/categories/cats/ids/1", bytes.NewBuffer([]byte(`{"name":"Charles"}`)))
-	assert(t, err, nil)
-	mux.ServeHTTP(mw, r)
-	assert(t, mw.status, 200)
-}
+// This test should fail to compile on go1.21 and successfully run on go1.22.
+// Don't forget to update go.mod to 1.22 before running.
+//func TestToHandlerFunc_MultiplePathValue(t *testing.T) {
+//	type Pet struct {
+//		Category string
+//		Id       string
+//		Name     string
+//	}
+//	f := ToHandlerFunc(func(in Request[Pet]) (Empty, error) {
+//		if in.PathValue("category") != "cats" || in.PathValue("id") != "1" {
+//			t.Errorf("wrong request, got %v", in)
+//		}
+//		return Empty{}, nil
+//	})
+//	mw := newMockWriter()
+//	mux := http.NewServeMux()
+//	mux.HandleFunc("/categories/{category}/ids/{id}", f)
+//	r, err := http.NewRequest("POST", "/categories/cats/ids/1", bytes.NewBuffer([]byte(`{"name":"Charles"}`)))
+//	assert(t, err, nil)
+//	mux.ServeHTTP(mw, r)
+//	assert(t, mw.status, 200)
+//}
 
 func TestToHandlerFunc_J(t *testing.T) {
 	f := ToHandlerFunc(func(in J) (J, error) {
@@ -59,7 +61,7 @@ func TestToHandlerFunc_J(t *testing.T) {
 	})
 	mw := newMockWriter()
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /j", f)
+	mux.HandleFunc("/j", f)
 	r, err := http.NewRequest("POST", "/j", bytes.NewBuffer([]byte(`{"name":"Lola"}`)))
 	assert(t, err, nil)
 	mux.ServeHTTP(mw, r)
@@ -76,7 +78,7 @@ func TestToHandlerFunc_Header(t *testing.T) {
 	})
 	mw := newMockWriter()
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /pets", f)
+	mux.HandleFunc("/pets", f)
 	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{}`)))
 	r.Header.Set("Content", "mycontent")
 	assert(t, err, nil)
@@ -91,7 +93,7 @@ func TestToHandlerFunc_Context(t *testing.T) {
 	})
 	mw := newMockWriter()
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /pets", f)
+	mux.HandleFunc("/pets", f)
 	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{"name":"Lola"}`)))
 	assert(t, err, nil)
 	mux.ServeHTTP(mw, r)
@@ -114,7 +116,7 @@ func TestToHandlerFunc_Middleware(t *testing.T) {
 	})
 	mw := newMockWriter()
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /pets", f)
+	mux.HandleFunc("/pets", f)
 	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{}`)))
 	assert(t, err, nil)
 	mux.ServeHTTP(mw, r)
