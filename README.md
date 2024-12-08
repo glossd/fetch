@@ -301,13 +301,13 @@ http.HandleFunc("/pets", fetch.ToHandlerFunc(func(in Pet) (*Pet, error) {
 }))
 http.ListenAndServe(":8080", nil)
 ```
-If you don't need request or response body, use `fetch.Empty` to fit the function signature.
+If you don't need request or response body, you can use `any` to fit the function signature. However, `fetch.Empty` will completely ignore the request or response body.
 ```go
 http.HandleFunc("/default-pet", fetch.ToHandlerFunc(func(_ fetch.Empty) (Pet, error) {
     return Pet{Name: "Teddy"}, nil
 }))
 ```
-If you need to access http request attributes wrap the input with `fetch.Request`. `http.Request` will be embedded to the input.
+If you need to access http request attributes wrap the input with `fetch.Request`:
 ```go
 type Pet struct {
     Name string
