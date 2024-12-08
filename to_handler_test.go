@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"testing"
+	_ "unsafe"
 )
 
 func TestToHandlerFunc_EmptyIn(t *testing.T) {
@@ -88,7 +89,7 @@ func TestToHandlerFunc_Header(t *testing.T) {
 
 func TestToHandlerFunc_Context(t *testing.T) {
 	f := ToHandlerFunc(func(in Request[Empty]) (Empty, error) {
-		assert(t, in.Context().Err(), nil)
+		assert(t, in.Context.Err(), nil)
 		return Empty{}, nil
 	})
 	mw := newMockWriter()
@@ -152,4 +153,29 @@ func TestToHandlerFunc_Middleware(t *testing.T) {
 	assert(t, err, nil)
 	mux.ServeHTTP(mw, r)
 	assert(t, mw.status, 422)
+}
+
+// to run it, update go.mod to 1.23
+//func TestToHandlerFunc_ExtractPathValues(t *testing.T) {
+//	mw := newMockWriter()
+//	mux := http.NewServeMux()
+//	mux.HandleFunc("POST /categories/{category}/ids/{id}", func(w http.ResponseWriter, r *http.Request) {
+//		res := extractPathValues(r)
+//		if len(res) != 2 || res["category"] != "cats" || res["id"] != "1" {
+//			t.Errorf("extractPathValues(r) got: %+v", res)
+//		}
+//		w.WriteHeader(422)
+//	})
+//	r, err := http.NewRequest("POST", "/categories/cats/ids/1", bytes.NewBuffer([]byte(`{"name":"Charles"}`)))
+//	assert(t, err, nil)
+//	mux.ServeHTTP(mw, r)
+//	assert(t, mw.status, 422)
+//}
+
+func TestToHandlerFunc_ExtractPathValues_GoLess23(t *testing.T) {
+	if !isGo23AndAbove() {
+		if len(extractPathValues(&http.Request{})) != 0 {
+			t.Errorf("expect zero map")
+		}
+	}
 }
