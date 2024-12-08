@@ -99,7 +99,11 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 
 		out, err := apply(in)
 		if err != nil {
-			err = RespondError(w, 500, err)
+			status := 500
+			if erro, ok := err.(*Error); ok {
+				status = erro.Status
+			}
+			err = RespondError(w, status, err)
 			if err != nil {
 				cfg.ErrorHook(err)
 			}

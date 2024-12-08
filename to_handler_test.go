@@ -100,6 +100,37 @@ func TestToHandlerFunc_Context(t *testing.T) {
 	assert(t, mw.status, 200)
 }
 
+func TestToHandlerFunc_ErrorStatus(t *testing.T) {
+	f := ToHandlerFunc(func(in Request[Empty]) (*Empty, error) {
+		return nil, &Error{Status: 403}
+	})
+	mw := newMockWriter()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/pets", f)
+	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{"name":"Lola"}`)))
+	assert(t, err, nil)
+	mux.ServeHTTP(mw, r)
+	assert(t, mw.status, 403)
+}
+
+func TestToHandlerFunc_Response(t *testing.T) {
+	type Pet struct {
+		Name string
+	}
+	f := ToHandlerFunc(func(in Empty) (Response[*Pet], error) {
+		return Response[*Pet]{Status: 201, Body: &Pet{Name: "Lola"}}, nil
+	})
+	mw := newMockWriter()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/pets", f)
+	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(``)))
+	assert(t, err, nil)
+	mux.ServeHTTP(mw, r)
+	if mw.status != 201 || string(mw.body) != `{"name":"Lola"}` {
+		t.Errorf("wrong writer: %+v", mw)
+	}
+}
+
 func TestToHandlerFunc_Middleware(t *testing.T) {
 	SetDefaultHandlerConfig(HandlerConfig{
 		Middleware: func(w http.ResponseWriter, r *http.Request) bool {

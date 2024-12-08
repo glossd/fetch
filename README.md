@@ -327,6 +327,12 @@ http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in fetch.Request[fetc
     return nil, nil
 }))
 ```
+To customize http attributes of the response, wrap the output with `fetch.Response`
+```go
+http.HandleFunc("/pets", fetch.ToHandlerFunc(func(_ fetch.Empty) (fetch.Response[*Pet], error) {
+    return Response[*Pet]{Status: 201, Body: &Pet{Name: "Lola"}}, nil
+}))
+```
 The error format can be customized with the `fetch.SetRespondErrorFormat` global setter.  
 To log http errors with your logger call `SetDefaultHandlerConfig`
 ```go
