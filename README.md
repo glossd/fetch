@@ -315,8 +315,8 @@ type Pet struct {
 http.HandleFunc("/pets", fetch.ToHandlerFunc(func(req fetch.Request[Pet]) (*fetch.Empty, error) {
     fmt.Println("Request context:", req.Context)
     fmt.Println("Authorization header:", req.Headers["Authorization"])
-	fmt.Println("Pet:", req.Body)
-	fmt.Println("Pet's name:", req.Body.Name)
+    fmt.Println("Pet:", req.Body)
+    fmt.Println("Pet's name:", req.Body.Name)
     return nil, nil
 }))
 ```
