@@ -8,12 +8,11 @@ import (
 )
 
 type Error struct {
-	inner            error
-	Msg              string
-	Status           int
-	Headers          map[string]string
-	DuplicateHeaders map[string][]string
-	Body             string
+	inner   error
+	Msg     string
+	Status  int
+	Headers map[string]string
+	Body    string
 }
 
 func (e *Error) Error() string {
@@ -39,12 +38,11 @@ func httpErr(prefix string, err error, r *http.Response, body []byte) *Error {
 		return nonHttpErr(prefix, err)
 	}
 	return &Error{
-		inner:            err,
-		Msg:              prefix + err.Error(),
-		Status:           r.StatusCode,
-		Headers:          uniqueHeaders(r.Header),
-		DuplicateHeaders: r.Header,
-		Body:             string(body),
+		inner:   err,
+		Msg:     prefix + err.Error(),
+		Status:  r.StatusCode,
+		Headers: uniqueHeaders(r.Header),
+		Body:    string(body),
 	}
 }
 
@@ -90,5 +88,5 @@ func jqerr(format string, a ...any) *JQError {
 }
 
 func IsJQError(v any) bool {
-	return reflect.TypeOf(v) == reflect.TypeFor[*JQError]()
+	return reflect.TypeOf(v) == reflectTypeFor[*JQError]()
 }

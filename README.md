@@ -10,7 +10,7 @@
 
 
 ## Installing
-This is a zero-dependency package. It requires Go version 1.22 or above.
+This is a zero-dependency package. It requires Go version 1.21 or above.
 ```shell
 go get github.com/glossd/fetch
 ```
@@ -108,9 +108,9 @@ if resp.Status == 200 {
     fmt.Println("Response headers", resp.Headers)
 }
 ```
-If you don't need the HTTP body you can use `fetch.ResponseEmpty`
+If you don't need the HTTP body you can use `fetch.Empty` or `fetch.Response[fetch.Empty]` to access http attributes
 ```go
-res, err := fetch.Delete[fetch.ResponseEmpty]("https://petstore.swagger.io/v2/pet/10")
+res, err := fetch.Delete[fetch.Response[fetch.Empty]]("https://petstore.swagger.io/v2/pet/10")
 if err != nil {
     panic(err)
 }
@@ -287,13 +287,13 @@ type Config struct {
 ```
 
 ## HTTP Handlers 
-`fetch.ToHandlerFunc` converts `func(in) (out, error)` signature function into `http.HandlerFunc`.
-It unmarshals the HTTP request body into the function argument then marshals the returned value into the HTTP response body.
+`fetch.ToHandlerFunc` converts `func(in) (out, error)` signature function into `http.HandlerFunc`. It does all the json and http handling for you. 
+The HTTP request body unmarshalls into the function argument. The return value is marshaled into the HTTP response body.
 ```go
 type Pet struct {
     Name string
 }
-http.HandleFunc("POST /pets", fetch.ToHandlerFunc(func(in Pet) (*Pet, error) {
+http.HandleFunc("/pets", fetch.ToHandlerFunc(func(in Pet) (*Pet, error) {
     if in.Name == "" {
         return nil, fmt.Errorf("name can't be empty")
     }
@@ -303,22 +303,34 @@ http.ListenAndServe(":8080", nil)
 ```
 If you don't need request or response body, use `fetch.Empty` to fit the function signature.
 ```go
-http.HandleFunc("GET /default-pet", fetch.ToHandlerFunc(func(_ fetch.Empty) (Pet, error) {
+http.HandleFunc("/default-pet", fetch.ToHandlerFunc(func(_ fetch.Empty) (Pet, error) {
     return Pet{Name: "Teddy"}, nil
 }))
 ```
-If you need to access path value or HTTP header use tags below:
+If you need to access http request attributes wrap the input with `fetch.Request`. `http.Request` will be embedded to the input.
 ```go
-type PetRequest struct {
-    Ctx  context.Context // http.Request.Context() will be inserted into any field with context.Context type. 
-    ID   int `pathval:"id"` // {id} wildcard will be inserted into ID field.
-    Auth string `header:"Authorization"` // Authorization header will be inserted into Auth field.
-    Name string // untagged fields will be unmarshalled from the request body.
+type Pet struct {
+    Name string
 }
-http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in PetRequest) (fetch.Empty, error) {
-    fmt.Println("Pet's id from url:", in.ID)
-    fmt.Println("Authorization header:", in.Auth)
-    return fetch.Empty{}, nil
+http.HandleFunc("/pets", fetch.ToHandlerFunc(func(in fetch.Request[Pet]) (*fetch.Empty, error) {
+    fmt.Println("Request context:", in.Context())
+    fmt.Println("Authorization header:", in.Headers["Authorization"])
+	fmt.Println("Pet:", in.Body)
+	fmt.Println("Pet's name:", in.Body.Name)
+    return nil, nil
+}))
+```
+If you have go1.22 and above you can access the wildcards as well.
+```go
+http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in fetch.Request[fetch.Empty]) (*fetch.Empty, error) {
+    fmt.Println("id from url:", in.PathValue("id"))
+    return nil, nil
+}))
+```
+To customize http attributes of the response, wrap the output with `fetch.Response`
+```go
+http.HandleFunc("/pets", fetch.ToHandlerFunc(func(_ fetch.Empty) (fetch.Response[*Pet], error) {
+    return Response[*Pet]{Status: 201, Body: &Pet{Name: "Lola"}}, nil
 }))
 ```
 The error format can be customized with the `fetch.SetRespondErrorFormat` global setter.  

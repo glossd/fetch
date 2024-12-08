@@ -29,7 +29,7 @@ func Get[T any](url string, config ...Config) (T, error) {
 		config = []Config{{}}
 	}
 	config[0].Method = http.MethodGet
-	return Request[T](url, config...)
+	return Do[T](url, config...)
 }
 
 // GetJ is a wrapper for Get[fetch.J]
@@ -60,7 +60,7 @@ func requestWithBody[T any](url string, method string, body any, config ...Confi
 		return t, nonHttpErr("invalid body: ", err)
 	}
 	config[0].Body = b
-	return Request[T](url, config...)
+	return Do[T](url, config...)
 }
 
 func bodyToString(v any) (string, error) {
@@ -78,7 +78,7 @@ func Delete[T any](url string, config ...Config) (T, error) {
 		config = []Config{{}}
 	}
 	config[0].Method = http.MethodDelete
-	return Request[T](url, config...)
+	return Do[T](url, config...)
 }
 
 func Head[T any](url string, config ...Config) (T, error) {
@@ -86,7 +86,7 @@ func Head[T any](url string, config ...Config) (T, error) {
 		config = []Config{{}}
 	}
 	config[0].Method = http.MethodHead
-	return Request[T](url, config...)
+	return Do[T](url, config...)
 }
 
 func Options[T any](url string, config ...Config) (T, error) {
@@ -94,10 +94,10 @@ func Options[T any](url string, config ...Config) (T, error) {
 		config = []Config{{}}
 	}
 	config[0].Method = http.MethodOptions
-	return Request[T](url, config...)
+	return Do[T](url, config...)
 }
 
-func Request[T any](url string, config ...Config) (T, error) {
+func Do[T any](url string, config ...Config) (T, error) {
 	var cfg Config
 	if len(config) > 0 {
 		cfg = config[0]
@@ -164,14 +164,13 @@ func Request[T any](url string, config ...Config) (T, error) {
 	var t T
 	typeOf := reflect.TypeOf(t)
 
-	if typeOf != nil && typeOf == reflect.TypeFor[Empty]() && firstDigit(res.StatusCode) == 2 {
+	if isEmptyType(t) && firstDigit(res.StatusCode) == 2 {
 		return t, nil
 	}
-	if typeOf != nil && typeOf == reflect.TypeFor[ResponseEmpty]() && firstDigit(res.StatusCode) == 2 {
-		re := any(&t).(*ResponseEmpty)
+	if isResponseWithEmpty(t) && firstDigit(res.StatusCode) == 2 {
+		re := any(&t).(*Response[Empty])
 		re.Status = res.StatusCode
 		re.Headers = uniqueHeaders(res.Header)
-		re.DuplicateHeaders = res.Header
 		return t, nil
 	}
 
@@ -184,7 +183,7 @@ func Request[T any](url string, config ...Config) (T, error) {
 		return t, httpErr(fmt.Sprintf("http status=%d, body=", res.StatusCode), errors.New(string(body)), res, body)
 	}
 
-	if typeOf != nil && typeOf.PkgPath() == "github.com/glossd/fetch" && strings.HasPrefix(typeOf.Name(), "Response[") {
+	if isResponseWrapper(t) {
 		resType, ok := typeOf.FieldByName("Body")
 		if !ok {
 			panic("field Body is not found in Response")
@@ -199,9 +198,7 @@ func Request[T any](url string, config ...Config) (T, error) {
 
 		valueOf := reflect.Indirect(reflect.ValueOf(&t))
 		valueOf.FieldByName("Status").SetInt(int64(res.StatusCode))
-		valueOf.FieldByName("DuplicateHeaders").Set(reflect.ValueOf(res.Header))
 		valueOf.FieldByName("Headers").Set(reflect.ValueOf(uniqueHeaders(res.Header)))
-		valueOf.FieldByName("BodyBytes").SetBytes(body)
 		valueOf.FieldByName("Body").Set(reflect.ValueOf(resInstance).Elem())
 
 		return t, nil

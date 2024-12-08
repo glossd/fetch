@@ -1,19 +1,10 @@
 package fetch
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"reflect"
-	"strconv"
-)
-
-type handleTag = string
-
-const (
-	pathvalTag handleTag = "pathval"
-	headerTag  handleTag = "header"
 )
 
 var defaultHandlerConfig = HandlerConfig{
@@ -44,29 +35,24 @@ type HandlerConfig struct {
 	Middleware func(w http.ResponseWriter, r *http.Request) bool
 }
 
+func (cfg HandlerConfig) respondError(w http.ResponseWriter, err error) {
+	cfg.ErrorHook(err)
+	err = RespondError(w, 400, err)
+	if err != nil {
+		cfg.ErrorHook(err)
+	}
+}
+
 // ApplyFunc represents a simple function to be converted to http.Handler with
 // In type as a request body and Out type as a response body.
 type ApplyFunc[In any, Out any] func(in In) (Out, error)
 
 /*
-	ToHandlerFunc converts ApplyFunc into http.HandlerFunc,
-	which can be used later in http.ServeMux#HandleFunc.
-	It unmarshals the HTTP request body into the ApplyFunc argument and
-	then marshals the returned value into the HTTP response body.
-	To insert PathValue into a field of the input entity, specify `pathval` tag
-	to match the pattern's wildcard:
-
-	type Pet struct {
-		Id int `pathval:"id"`
-	}
-
-`	header` tag can be used to insert HTTP headers into struct field.
-
-	type Pet struct {
-		Content string `header:"Content-Type"`
-	}
-
-	Any field with context.Context type will have http.Request.Context() inserted into.
+ToHandlerFunc converts ApplyFunc into http.HandlerFunc,
+which can be used later in http.ServeMux#HandleFunc.
+It unmarshals the HTTP request body into the ApplyFunc argument and
+then marshals the returned value into the HTTP response body.
+To access HTTP request attributes, wrap your input in fetch.Request.
 */
 func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -75,32 +61,49 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			return
 		}
 		var in In
-		if st, _ := isStructType(in); st != reflect.TypeOf(Empty{}) {
-			reqBody, err := io.ReadAll(r.Body)
-			if err != nil {
-				cfg.ErrorHook(err)
-				err = RespondError(w, 400, err)
-				if err != nil {
-					cfg.ErrorHook(err)
-				}
-				return
+		if isRequestWrapper(in) {
+			typeOf := reflect.TypeOf(in)
+			resType, ok := typeOf.FieldByName("Body")
+			if !ok {
+				panic("field Body is not found in Request")
 			}
-			if len(reqBody) > 0 || shouldValidateInput(in) {
-				in, err = Unmarshal[In](string(reqBody))
+			resInstance := reflect.New(resType.Type).Interface()
+			if !isEmptyType(resInstance) {
+				reqBody, err := io.ReadAll(r.Body)
 				if err != nil {
-					cfg.ErrorHook(fmt.Errorf("failed to unmarshal request body: %s", err))
-					err = RespondError(w, 400, err)
-					if err != nil {
-						cfg.ErrorHook(err)
-					}
+					cfg.respondError(w, err)
+					return
+				}
+				err = parseBodyInto(reqBody, resInstance)
+				if err != nil {
+					cfg.respondError(w, fmt.Errorf("failed to parse request body: %s", err))
 					return
 				}
 			}
+			valueOf := reflect.Indirect(reflect.ValueOf(&in))
+			valueOf.FieldByName("Request").Set(reflect.ValueOf(r))
+			valueOf.FieldByName("Headers").Set(reflect.ValueOf(uniqueHeaders(r.Header)))
+			valueOf.FieldByName("Body").Set(reflect.ValueOf(resInstance).Elem())
+		} else if !isEmptyType(in) {
+			reqBody, err := io.ReadAll(r.Body)
+			if err != nil {
+				cfg.respondError(w, err)
+				return
+			}
+			err = parseBodyInto(reqBody, &in)
+			if err != nil {
+				cfg.respondError(w, fmt.Errorf("failed to parse request body: %s", err))
+				return
+			}
 		}
-		in = enrichEntity(in, r)
+
 		out, err := apply(in)
 		if err != nil {
-			err = RespondError(w, 500, err)
+			status := 500
+			if erro, ok := err.(*Error); ok {
+				status = erro.Status
+			}
+			err = RespondError(w, status, err)
 			if err != nil {
 				cfg.ErrorHook(err)
 			}
@@ -111,79 +114,4 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			cfg.ErrorHook(err)
 		}
 	}
-}
-
-// Input entity just might have a field with pathval tag
-// and nothing else, we don't need to unmarshal it.
-// In case it has some untagged fields, then it must be validated.
-func shouldValidateInput(v any) bool {
-	if t, ok := isStructType(v); ok {
-		for i := 0; i < t.NumField(); i++ {
-			tag := t.Field(i).Tag
-			if tag.Get(headerTag) == "" && tag.Get(pathvalTag) == "" && t.Field(i).Type != reflect.TypeFor[context.Context]() {
-				return true
-			}
-		}
-		return false
-	} else {
-		return false
-	}
-}
-
-func isStructType(v any) (reflect.Type, bool) {
-	typeOf := reflect.TypeOf(v)
-	if v == nil {
-		return typeOf, false
-	}
-	switch typeOf.Kind() {
-	case reflect.Pointer:
-		valueOf := reflect.ValueOf(v)
-		if valueOf.IsNil() {
-			return typeOf, false
-		}
-		t := reflect.ValueOf(v).Elem().Type()
-		return t, t.Kind() == reflect.Struct
-	case reflect.Struct:
-		return typeOf, true
-	default:
-		return typeOf, false
-	}
-}
-
-func enrichEntity[T any](entity T, r *http.Request) T {
-	typeOf, ok := isStructType(entity)
-	if !ok {
-		return entity
-	}
-	var elem reflect.Value
-	if reflect.TypeOf(entity).Kind() == reflect.Pointer {
-		elem = reflect.ValueOf(entity).Elem()
-	} else { // struct
-		elem = reflect.ValueOf(&entity).Elem()
-	}
-	for i := 0; i < typeOf.NumField(); i++ {
-		field := typeOf.Field(i)
-		if field.Type == reflect.TypeFor[context.Context]() {
-			elem.Field(i).Set(reflect.ValueOf(r.Context()))
-		}
-		if header := field.Tag.Get(headerTag); header != "" {
-			elem.Field(i).SetString(r.Header.Get(header))
-		}
-		if pathval := field.Tag.Get(pathvalTag); pathval != "" {
-			pathvar := r.PathValue(pathval)
-			if pathvar != "" {
-				switch field.Type.Kind() {
-				case reflect.String:
-					elem.Field(i).SetString(pathvar)
-				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-					valInt64, err := strconv.ParseInt(pathvar, 10, 64)
-					if err != nil {
-						continue
-					}
-					elem.Field(i).SetInt(valInt64)
-				}
-			}
-		}
-	}
-	return entity
 }
