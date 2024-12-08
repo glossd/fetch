@@ -312,21 +312,21 @@ If you need to access http request attributes wrap the input with `fetch.Request
 type Pet struct {
     Name string
 }
-http.HandleFunc("/pets", fetch.ToHandlerFunc(func(in fetch.Request[Pet]) (*fetch.Empty, error) {
-    fmt.Println("Request context:", in.Context())
-    fmt.Println("Authorization header:", in.Headers["Authorization"])
-	fmt.Println("Pet:", in.Body)
-	fmt.Println("Pet's name:", in.Body.Name)
+http.HandleFunc("/pets", fetch.ToHandlerFunc(func(req fetch.Request[Pet]) (*fetch.Empty, error) {
+    fmt.Println("Request context:", req.Context)
+    fmt.Println("Authorization header:", req.Headers["Authorization"])
+    fmt.Println("Pet:", req.Body)
+    fmt.Println("Pet's name:", req.Body.Name)
     return nil, nil
 }))
 ```
-If you have go1.22 and above you can access the wildcards as well.
+If you have go1.23 and above you can access the wildcards as well.
 ```go
 http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in fetch.Request[fetch.Empty]) (*fetch.Empty, error) {
-    fmt.Println("id from url:", in.PathValue("id"))
+    fmt.Println("id from url:", in.PathValues["id"])
     return nil, nil
 }))
-```
+``` 
 To customize http attributes of the response, wrap the output with `fetch.Response`
 ```go
 http.HandleFunc("/pets", fetch.ToHandlerFunc(func(_ fetch.Empty) (fetch.Response[*Pet], error) {

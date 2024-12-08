@@ -1,7 +1,7 @@
 package fetch
 
 import (
-	"net/http"
+	"context"
 	"reflect"
 	"strings"
 )
@@ -54,9 +54,14 @@ e.g.
 	}))
 */
 type Request[T any] struct {
-	*http.Request
-	Headers map[string]string
-	Body    T
+	Context context.Context
+	// Only available in go1.23 and above.
+	// PathValue was introduced in go1.22 but
+	// there was no reliable way to extract them.
+	// go1.23 introduced http.Request.Pattern allowing to list the wildcards.
+	PathValues map[string]string
+	Headers    map[string]string
+	Body       T
 }
 
 // Empty represents an empty response or request body, skipping JSON handling.

@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"runtime"
+	"strings"
 )
 
 var defaultHandlerConfig = HandlerConfig{
@@ -81,7 +83,8 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 				}
 			}
 			valueOf := reflect.Indirect(reflect.ValueOf(&in))
-			valueOf.FieldByName("Request").Set(reflect.ValueOf(r))
+			valueOf.FieldByName("PathValues").Set(reflect.ValueOf(extractPathValues(r)))
+			valueOf.FieldByName("Context").Set(reflect.ValueOf(r.Context()))
 			valueOf.FieldByName("Headers").Set(reflect.ValueOf(uniqueHeaders(r.Header)))
 			valueOf.FieldByName("Body").Set(reflect.ValueOf(resInstance).Elem())
 		} else if !isEmptyType(in) {
@@ -114,4 +117,38 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			cfg.ErrorHook(err)
 		}
 	}
+}
+
+func extractPathValues(r *http.Request) map[string]string {
+	if !isGo23AndAbove() || r == nil {
+		return map[string]string{}
+	}
+
+	req := reflect.ValueOf(r)
+
+	parts := strings.Split(req.Elem().FieldByName("Pattern").String(), "/")
+	result := make(map[string]string)
+	for _, part := range parts {
+		if len(part) > 2 && strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
+			wildcard := part[1 : len(part)-1]
+			values := req.MethodByName("PathValue").Call([]reflect.Value{reflect.ValueOf(wildcard)})
+			if len(values) != 1 {
+				continue
+			}
+			if v := values[0].String(); v != "" {
+				result[wildcard] = v
+			}
+		}
+	}
+	return result
+}
+
+func isGo23AndAbove() bool {
+	if strings.HasPrefix(runtime.Version(), "go1.21") {
+		return false
+	}
+	if strings.HasPrefix(runtime.Version(), "go1.22") {
+		return false
+	}
+	return true
 }
