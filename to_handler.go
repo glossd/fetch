@@ -71,14 +71,9 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			}
 			resInstance := reflect.New(resType.Type).Interface()
 			if !isEmptyType(resInstance) {
-				reqBody, err := io.ReadAll(r.Body)
+				err := readAndParseBody(r, resInstance)
 				if err != nil {
 					cfg.respondError(w, err)
-					return
-				}
-				err = parseBodyInto(reqBody, resInstance)
-				if err != nil {
-					cfg.respondError(w, fmt.Errorf("failed to parse request body: %s", err))
 					return
 				}
 			}
@@ -88,14 +83,9 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			valueOf.FieldByName("Headers").Set(reflect.ValueOf(uniqueHeaders(r.Header)))
 			valueOf.FieldByName("Body").Set(reflect.ValueOf(resInstance).Elem())
 		} else if !isEmptyType(in) {
-			reqBody, err := io.ReadAll(r.Body)
+			err := readAndParseBody(r, &in)
 			if err != nil {
 				cfg.respondError(w, err)
-				return
-			}
-			err = parseBodyInto(reqBody, &in)
-			if err != nil {
-				cfg.respondError(w, fmt.Errorf("failed to parse request body: %s", err))
 				return
 			}
 		}
@@ -117,6 +107,18 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			cfg.ErrorHook(err)
 		}
 	}
+}
+
+func readAndParseBody(r *http.Request, in any) error {
+	reqBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+	err = parseBodyInto(reqBody, in)
+	if err != nil {
+		return fmt.Errorf("parse request body: %s", err)
+	}
+	return nil
 }
 
 func extractPathValues(r *http.Request) map[string]string {

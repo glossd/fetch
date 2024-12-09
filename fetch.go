@@ -193,7 +193,7 @@ func Do[T any](url string, config ...Config) (T, error) {
 		err = parseBodyInto(body, resInstance)
 		if err != nil {
 			var t T
-			return t, httpErr("parsing JSON error: ", err, res, body)
+			return t, httpErr("parse response body: ", err, res, body)
 		}
 
 		valueOf := reflect.Indirect(reflect.ValueOf(&t))
@@ -206,7 +206,7 @@ func Do[T any](url string, config ...Config) (T, error) {
 	err = parseBodyInto(body, &t)
 	if err != nil {
 		var t T
-		return t, httpErr("parsing JSON error: ", err, res, body)
+		return t, httpErr("parse response body: ", err, res, body)
 	}
 	return t, nil
 }
@@ -228,6 +228,9 @@ func parseBodyInto(body []byte, v any) error {
 	if rve.Kind() == reflect.Slice && rve.Type().Elem().Kind() == reflect.Uint8 {
 		rve.SetBytes(body)
 		return nil
+	}
+	if len(body) == 0 {
+		return fmt.Errorf("body is empty")
 	}
 	err := UnmarshalInto(string(body), v)
 	if err != nil {

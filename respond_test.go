@@ -10,14 +10,14 @@ import (
 type mockWriter struct {
 	status int
 	header http.Header
-	body   []byte
+	body   string
 }
 
 func newMockWriter() *mockWriter {
 	return &mockWriter{
 		status: 0,
 		header: http.Header{},
-		body:   nil,
+		body:   "",
 	}
 }
 
@@ -30,7 +30,7 @@ func (mw *mockWriter) Header() http.Header {
 }
 
 func (mw *mockWriter) Write(b []byte) (int, error) {
-	mw.body = b
+	mw.body = string(b)
 	return 0, nil
 }
 
@@ -52,7 +52,7 @@ func TestRespond_Struct(t *testing.T) {
 	assert(t, err, nil)
 	assert(t, mw.status, 200)
 	assert(t, mw.Header().Get("Content-Type"), "application/json")
-	assert(t, strings.TrimSpace(string(mw.body)), `{"id":"my-id"}`)
+	assert(t, strings.TrimSpace(mw.body), `{"id":"my-id"}`)
 }
 
 func TestRespond_InvalidJSON(t *testing.T) {
@@ -64,7 +64,7 @@ func TestRespond_InvalidJSON(t *testing.T) {
 	assertNotNil(t, err)
 	assert(t, mw.status, 500)
 	assert(t, mw.Header().Get("Content-Type"), "application/json")
-	assert(t, strings.HasPrefix(string(mw.body), `{"error":`), true)
+	assert(t, strings.HasPrefix(mw.body, `{"error":`), true)
 }
 
 func TestRespond_InvalidStatus(t *testing.T) {
@@ -73,7 +73,7 @@ func TestRespond_InvalidStatus(t *testing.T) {
 	assertNotNil(t, err)
 	assert(t, mw.status, 500)
 	assert(t, mw.Header().Get("Content-Type"), "application/json")
-	assert(t, strings.HasPrefix(string(mw.body), `{"error":`), true)
+	assert(t, strings.HasPrefix(mw.body, `{"error":`), true)
 }
 
 func TestSetRespondErrorFormat(t *testing.T) {
@@ -85,7 +85,7 @@ func TestSetRespondErrorFormat(t *testing.T) {
 	mw := newMockWriter()
 	Respond(mw, "hello", RespondConfig{Status: 51})
 	assert(t, mw.header.Get("Content-Type"), "text/plain")
-	assert(t, string(mw.body), "RespondConfig.Status is invalid")
+	assert(t, mw.body, "RespondConfig.Status is invalid")
 }
 
 func TestSetRespondErrorFormat_InvalidFormats(t *testing.T) {
@@ -125,8 +125,8 @@ func TestRespondResponse(t *testing.T) {
 	mw := newMockWriter()
 	err := Respond(mw, Response[Pet]{Status: 201, Body: Pet{Name: "Lola"}})
 	assert(t, err, nil)
-	if mw.status != 201 || string(mw.body) != `{"name":"Lola"}` {
-		t.Errorf("wrong writer: %+v, %s", mw, string(mw.body))
+	if mw.status != 201 || mw.body != `{"name":"Lola"}` {
+		t.Errorf("wrong writer: %+v, %s", mw, mw.body)
 	}
 }
 
@@ -136,7 +136,7 @@ func TestRespondError(t *testing.T) {
 	assert(t, err, nil)
 	assert(t, mw.status, 400)
 	assert(t, mw.Header().Get("Content-Type"), "application/json")
-	assert(t, string(mw.body), `{"error":"wrong"}`)
+	assert(t, mw.body, `{"error":"wrong"}`)
 }
 
 func assert[T comparable](t *testing.T, got, want T) {

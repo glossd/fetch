@@ -29,7 +29,7 @@ func TestToHandlerFunc_EmptyOut(t *testing.T) {
 	assert(t, err, nil)
 	f(mw, r)
 	assert(t, mw.status, 200)
-	assert(t, string(mw.body), ``)
+	assert(t, mw.body, ``)
 }
 
 // This test should fail to compile on go1.21 and successfully run on go1.22.
@@ -85,6 +85,26 @@ func TestToHandlerFunc_Header(t *testing.T) {
 	assert(t, err, nil)
 	mux.ServeHTTP(mw, r)
 	assert(t, mw.status, 200)
+}
+
+func TestToHandlerFunc_ParseErrors(t *testing.T) {
+	t.Run("Empty Request Body, Struct with fields", func(t *testing.T) {
+		type Pet struct {
+			Name string
+		}
+		f := ToHandlerFunc(func(in Request[Pet]) (Empty, error) {
+			return Empty{}, nil
+		})
+		mw := newMockWriter()
+		mux := http.NewServeMux()
+		mux.HandleFunc("/pets", f)
+		r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(``)))
+		assert(t, err, nil)
+		mux.ServeHTTP(mw, r)
+		if mw.status != 400 || mw.body != `{"error":"parse request body: body is empty"}` {
+			t.Errorf("Wrong writer: %+v", mw)
+		}
+	})
 }
 
 func TestToHandlerFunc_Context(t *testing.T) {
