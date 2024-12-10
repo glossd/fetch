@@ -80,7 +80,8 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			valueOf := reflect.Indirect(reflect.ValueOf(&in))
 			valueOf.FieldByName("PathValues").Set(reflect.ValueOf(extractPathValues(r)))
 			valueOf.FieldByName("Context").Set(reflect.ValueOf(r.Context()))
-			valueOf.FieldByName("Headers").Set(reflect.ValueOf(uniqueHeaders(r.Header)))
+			valueOf.FieldByName("Parameters").Set(reflect.ValueOf(mapFlatten(r.URL.Query())))
+			valueOf.FieldByName("Headers").Set(reflect.ValueOf(mapFlatten(r.Header)))
 			valueOf.FieldByName("Body").Set(reflect.ValueOf(resInstance).Elem())
 		} else if !isEmptyType(in) {
 			err := readAndParseBody(r, &in)
