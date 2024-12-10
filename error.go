@@ -41,7 +41,7 @@ func httpErr(prefix string, err error, r *http.Response, body []byte) *Error {
 		inner:   err,
 		Msg:     prefix + err.Error(),
 		Status:  r.StatusCode,
-		Headers: uniqueHeaders(r.Header),
+		Headers: mapFlatten(r.Header),
 		Body:    string(body),
 	}
 }

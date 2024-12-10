@@ -29,15 +29,15 @@ type Response[T any] struct {
 	Body    T
 }
 
-func uniqueHeaders(headers map[string][]string) map[string]string {
-	h := make(map[string]string, len(headers))
-	for key, val := range headers {
+func mapFlatten(m map[string][]string) map[string]string {
+	newM := make(map[string]string, len(m))
+	for key, val := range m {
 		if len(val) > 0 {
 			// it takes the last element intentionally.
-			h[key] = val[len(val)-1]
+			newM[key] = val[len(val)-1]
 		}
 	}
-	return h
+	return newM
 }
 
 /*
@@ -60,8 +60,11 @@ type Request[T any] struct {
 	// there was no reliable way to extract them.
 	// go1.23 introduced http.Request.Pattern allowing to list the wildcards.
 	PathValues map[string]string
-	Headers    map[string]string
-	Body       T
+	// URL parameters.
+	Parameters map[string]string
+	// HTTP headers.
+	Headers map[string]string
+	Body    T
 }
 
 // Empty represents an empty response or request body, skipping JSON handling.

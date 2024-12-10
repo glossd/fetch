@@ -87,6 +87,22 @@ func TestToHandlerFunc_Header(t *testing.T) {
 	assert(t, mw.status, 200)
 }
 
+func TestToHandlerFunc_UrlParameter(t *testing.T) {
+	f := ToHandlerFunc(func(in Request[Empty]) (Empty, error) {
+		if in.Parameters["name"] != "Lola" {
+			t.Errorf("wrong in %v", in)
+		}
+		return Empty{}, nil
+	})
+	mw := newMockWriter()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/pets", f)
+	r, err := http.NewRequest("POST", "/pets?name=Lola", bytes.NewBuffer([]byte(``)))
+	assert(t, err, nil)
+	mux.ServeHTTP(mw, r)
+	assert(t, mw.status, 200)
+}
+
 func TestToHandlerFunc_ParseErrors(t *testing.T) {
 	t.Run("Empty Request Body, Struct with fields", func(t *testing.T) {
 		type Pet struct {

@@ -170,7 +170,7 @@ func Do[T any](url string, config ...Config) (T, error) {
 	if isResponseWithEmpty(t) && firstDigit(res.StatusCode) == 2 {
 		re := any(&t).(*Response[Empty])
 		re.Status = res.StatusCode
-		re.Headers = uniqueHeaders(res.Header)
+		re.Headers = mapFlatten(res.Header)
 		return t, nil
 	}
 
@@ -198,7 +198,7 @@ func Do[T any](url string, config ...Config) (T, error) {
 
 		valueOf := reflect.Indirect(reflect.ValueOf(&t))
 		valueOf.FieldByName("Status").SetInt(int64(res.StatusCode))
-		valueOf.FieldByName("Headers").Set(reflect.ValueOf(uniqueHeaders(res.Header)))
+		valueOf.FieldByName("Headers").Set(reflect.ValueOf(mapFlatten(res.Header)))
 		valueOf.FieldByName("Body").Set(reflect.ValueOf(resInstance).Elem())
 
 		return t, nil
