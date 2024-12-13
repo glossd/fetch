@@ -180,7 +180,7 @@ func Do[T any](url string, config ...Config) (T, error) {
 	}
 
 	if firstDigit(res.StatusCode) != 2 {
-		return t, httpErr(fmt.Sprintf("http status=%d, body=", res.StatusCode), errors.New(string(body)), res, body)
+		return t, httpErr(fmt.Sprintf("http response with status=%d, body: ", res.StatusCode), errors.New(string(body)), res, body)
 	}
 
 	if isResponseWrapper(t) {
