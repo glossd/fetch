@@ -47,7 +47,7 @@ func TestRequestIntegration(t *testing.T) {
 	if err.(*Error).Headers["Access-Control-Allow-Origin"] != "noone.com" {
 		t.Fatalf("expected header, got=%s", err.(*Error).Headers["Access-Control-Allow-Origin"])
 	}
-	if err.Error() != "http status=303, body=wrong neighborhood" {
+	if err.Error() != "http response with status=303, body: wrong neighborhood" {
 		t.Fatalf("wrong error message, got=%s", err)
 	}
 
@@ -63,7 +63,7 @@ func TestRequestIntegration(t *testing.T) {
 	}
 
 	_, err = Post[Pet]("localhost:7349/get", "i'm post")
-	if err.Error() != `http status=405, body={"message":"get out"}` {
+	if err.Error() != `http response with status=405, body: {"message":"get out"}` {
 		t.Errorf("expected 405 status error, got=%s", err)
 	}
 }
