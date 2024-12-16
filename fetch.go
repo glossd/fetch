@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 )
 
 var httpClient = &http.Client{}
@@ -18,6 +19,8 @@ var baseURL = ""
 type Config struct {
 	// Defaults to context.Background()
 	Ctx context.Context
+	// Sets Ctx with the specified timeout. If Ctx is specified Timeout is ignored.
+	Timeout time.Duration
 	// Defaults to GET
 	Method  string
 	Body    string
@@ -104,7 +107,13 @@ func Do[T any](url string, config ...Config) (T, error) {
 	}
 
 	if cfg.Ctx == nil {
-		cfg.Ctx = context.Background()
+		if cfg.Timeout > 0 {
+			var cancel context.CancelFunc
+			cfg.Ctx, cancel = context.WithTimeout(context.Background(), cfg.Timeout)
+			defer cancel()
+		} else {
+			cfg.Ctx = context.Background()
+		}
 	}
 	if cfg.Method == "" {
 		cfg.Method = "GET"

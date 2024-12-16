@@ -2,6 +2,7 @@ package fetch
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -95,4 +96,30 @@ func TestIssue1(t *testing.T) {
 	if res != "all good" {
 		t.Errorf("wrong response")
 	}
+}
+
+func TestTimeout(t *testing.T) {
+	mock = false
+	defer func() { mock = true }()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/delay", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(time.Minute)
+		w.WriteHeader(200)
+	})
+	server := &http.Server{Addr: ":7349", Handler: mux}
+	go server.ListenAndServe()
+	serverCtx, cancel := context.WithCancel(context.Background())
+	defer server.Shutdown(serverCtx)
+	time.Sleep(time.Millisecond)
+
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	_, err := Post[string]("http://localhost:7349/delay", nil, Config{Ctx: ctx})
+	if err == nil || !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context deadealine, got=%v", err)
+	}
+	_, err = Post[string]("http://localhost:7349/delay", nil, Config{Timeout: 10 * time.Millisecond})
+	if err == nil || !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context deadealine, got=%v", err)
+	}
+	cancel() // kill sleeping http handlers
 }

@@ -12,7 +12,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestRequestString(t *testing.T) {
+func TestDoString(t *testing.T) {
 	res, err := Do[string]("my.ip")
 	if err != nil {
 		t.Fatal(err)
@@ -22,7 +22,7 @@ func TestRequestString(t *testing.T) {
 	}
 }
 
-func TestRequestBytes(t *testing.T) {
+func TestDoBytes(t *testing.T) {
 	res, err := Do[[]byte]("array.int")
 	if err != nil {
 		t.Fatal(err)
@@ -33,7 +33,7 @@ func TestRequestBytes(t *testing.T) {
 	}
 }
 
-func TestRequestArray(t *testing.T) {
+func TestDoArray(t *testing.T) {
 	res, err := Do[[]int]("array.int")
 	if err != nil {
 		t.Fatal(err)
@@ -43,7 +43,7 @@ func TestRequestArray(t *testing.T) {
 	}
 }
 
-func TestRequestAny(t *testing.T) {
+func TestDoAny(t *testing.T) {
 	res, err := Do[any]("key.value")
 	if err != nil {
 		t.Fatal(err)
@@ -69,7 +69,7 @@ func TestRequestAny(t *testing.T) {
 	}
 }
 
-func TestRequest_ResponseT(t *testing.T) {
+func TestDo_ResponseT(t *testing.T) {
 	type TestStruct struct {
 		Key string
 	}
@@ -98,7 +98,7 @@ func TestRequest_ResponseT(t *testing.T) {
 	}
 }
 
-func TestRequest_ResponseEmpty(t *testing.T) {
+func TestDo_ResponseEmpty(t *testing.T) {
 	res, err := Do[Response[Empty]]("key.value")
 	if err != nil {
 		t.Error(err)
@@ -116,7 +116,7 @@ func TestRequest_ResponseEmpty(t *testing.T) {
 	}
 }
 
-func TestRequest_Error(t *testing.T) {
+func TestDo_Error(t *testing.T) {
 	_, err := Do[string]("400.error")
 	if err == nil {
 		t.Fatal(err)
