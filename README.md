@@ -129,15 +129,19 @@ if err != nil {
 }
 ```
 ### Make request with Go Context
-Request with 5 seconds timeout: 
+Request Context lives in `fetch.Config`
 ```go
-ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-defer cancel()
-_, err := fetch.Get[string]("https://petstore.swagger.io/v2/pet/1", fetch.Config{Ctx: ctx})
-if err != nil {
-    panic(err)
+func myFuncWithContext(ctx context.Context) {
+    ...
+    res, err := fetch.Get[string]("https://petstore.swagger.io/v2/pet/1", fetch.Config{Ctx: ctx})
+    ...
 }
 ```
+Request with 5 seconds timeout: 
+```go
+fetch.Get[string]("https://petstore.swagger.io/v2/pet/1", fetch.Config{Timeout: 5*time.Second})
+```
+
 
 ### Request with headers
 ```go
@@ -279,6 +283,8 @@ Each HTTP method has the configuration option.
 type Config struct {
     // Defaults to context.Background()
     Ctx context.Context
+    // Sets Ctx with the specified timeout. If Ctx is specified Timeout is ignored.
+    Timeout time.Duration
     // Defaults to GET
     Method  string
     Body    string
