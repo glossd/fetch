@@ -283,6 +283,8 @@ Each HTTP method has the configuration option.
 type Config struct {
     // Defaults to context.Background()
     Ctx context.Context
+    // Sets Ctx with the specified timeout. If Ctx is specified Timeout is ignored.
+    Timeout time.Duration
     // Defaults to GET
     Method  string
     Body    string
