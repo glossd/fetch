@@ -169,13 +169,13 @@ func TestToHandlerFunc_Response(t *testing.T) {
 }
 
 func TestToHandlerFunc_Middleware(t *testing.T) {
-	SetDefaultHandlerConfig(HandlerConfig{
+	SetHandlerConfig(HandlerConfig{
 		Middleware: func(w http.ResponseWriter, r *http.Request) bool {
 			w.WriteHeader(422)
 			return true
 		},
 	})
-	defer SetDefaultHandlerConfig(HandlerConfig{Middleware: func(w http.ResponseWriter, r *http.Request) bool {
+	defer SetHandlerConfig(HandlerConfig{Middleware: func(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}})
 

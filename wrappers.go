@@ -67,6 +67,33 @@ type Request[T any] struct {
 	Body    T
 }
 
+func (r Request[T]) WithPathValue(name, value string) Request[T] {
+	if r.PathValues == nil {
+		r.PathValues = map[string]string{name: value}
+		return r
+	}
+	r.PathValues[name] = value
+	return r
+}
+
+func (r Request[T]) WithParameter(name, value string) Request[T] {
+	if r.Parameters == nil {
+		r.Parameters = map[string]string{name: value}
+		return r
+	}
+	r.Parameters[name] = value
+	return r
+}
+
+func (r Request[T]) WithHeader(name, value string) Request[T] {
+	if r.Headers == nil {
+		r.Headers = map[string]string{name: value}
+		return r
+	}
+	r.Headers[name] = value
+	return r
+}
+
 // Empty represents an empty response or request body, skipping JSON handling.
 // Can be used with the wrappers Response and Request or to fit the signature of ApplyFunc.
 type Empty struct{}

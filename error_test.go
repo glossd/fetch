@@ -26,22 +26,3 @@ func TestError_Format(t *testing.T) {
 		t.Errorf("error failed, got: %s", err)
 	}
 }
-
-func TestIsJQError(t *testing.T) {
-	f := func() any {
-		return jqerr("invalid")
-	}
-
-	got := f()
-	if !IsJQError(got) {
-		t.Errorf("supposed to be JQError")
-	}
-
-	if IsJQError(errors.New("hello")) {
-		t.Errorf("not supposed to be JQError")
-	}
-
-	if fmt.Sprint(jqerr("hello")) != "JQError: hello" {
-		t.Errorf("unexpected format")
-	}
-}

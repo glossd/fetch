@@ -10,7 +10,7 @@
 
 
 ## Installing
-This is a zero-dependency package. It requires Go version 1.21 or above.
+This is a zero-dependency package. It requires Go version **1.21** or above. **Stable** version is out!
 ```shell
 go get github.com/glossd/fetch
 ```
@@ -293,19 +293,23 @@ type Config struct {
 ```
 
 ## HTTP Handlers 
-`fetch.ToHandlerFunc` converts `func(in) (out, error)` signature function into `http.HandlerFunc`. It does all the json and http handling for you. 
+`fetch.ToHandlerFunc` converts `func(in) (out, error)` signature function into `http.HandlerFunc`. It does all the json and http handling for you.
 The HTTP request body unmarshalls into the function argument. The return value is marshaled into the HTTP response body.
 ```go
 type Pet struct {
     Name string
 }
-http.HandleFunc("/pets", fetch.ToHandlerFunc(func(in Pet) (*Pet, error) {
+http.HandleFunc("/pets/update", fetch.ToHandlerFunc(func(in Pet) (*Pet, error) {
     if in.Name == "" {
         return nil, fmt.Errorf("name can't be empty")
     }
-    return &Pet{Name: in.Name}, nil
+    return &Pet{Name: in.Name + " 3000"}, nil
 }))
 http.ListenAndServe(":8080", nil)
+```
+```shell
+$ curl localhost:8080/pets/update -d '{"name":"Lola"}'
+{"name":"Lola 3000"}
 ```
 If you have empty request or response body or you want to ignore them, use  `fetch.Empty`:
 ```go
@@ -339,16 +343,16 @@ http.HandleFunc("/pets", fetch.ToHandlerFunc(func(_ fetch.Empty) (fetch.Response
     return Response[*Pet]{Status: 201, Body: &Pet{Name: "Lola"}}, nil
 }))
 ```
-The error format can be customized with the `fetch.SetRespondErrorFormat` global setter.  
-To log http errors with your logger call `SetDefaultHandlerConfig`
+The error format can be customized with the `fetch.SetHandlerErrorFormat` global setter.  
+To log `ToHandleFunc` errors with your logger call `SetHandlerConfig`
 ```go
-fetch.SetDefaultHandlerConfig(fetch.HandlerConfig{ErrorHook: func(err error) {
+fetch.SetHandlerConfig(fetch.HandlerConfig{ErrorHook: func(err error) {
     mylogger.Errorf("fetch http error: %s", err)
 }})
 ```
 To add middleware before handling request in `fetch.ToHandlerFunc`  
 ```go 
-fetch.SetDefaultHandlerConfig(fetch.HandlerConfig{Middleware: func(w http.ResponseWriter, r *http.Request) bool {
+fetch.SetHandlerConfig(fetch.HandlerConfig{Middleware: func(w http.ResponseWriter, r *http.Request) bool {
     if r.Header.Get("Authorization") == "" {
         w.WriteHeader(401)
         return true

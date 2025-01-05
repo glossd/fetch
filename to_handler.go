@@ -18,8 +18,8 @@ var defaultHandlerConfig = HandlerConfig{
 	},
 }
 
-// SetDefaultHandlerConfig sets HandlerConfig globally to be applied for every ToHandlerFunc.
-func SetDefaultHandlerConfig(hc HandlerConfig) {
+// SetHandlerConfig sets HandlerConfig globally to be applied for every ToHandlerFunc.
+func SetHandlerConfig(hc HandlerConfig) {
 	if hc.ErrorHook == nil {
 		hc.ErrorHook = defaultHandlerConfig.ErrorHook
 	}
@@ -39,7 +39,7 @@ type HandlerConfig struct {
 
 func (cfg HandlerConfig) respondError(w http.ResponseWriter, err error) {
 	cfg.ErrorHook(err)
-	err = RespondError(w, 400, err)
+	err = respondError(w, 400, err)
 	if err != nil {
 		cfg.ErrorHook(err)
 	}
@@ -97,13 +97,13 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			if erro, ok := err.(*Error); ok {
 				status = erro.Status
 			}
-			err = RespondError(w, status, err)
+			err = respondError(w, status, err)
 			if err != nil {
 				cfg.ErrorHook(err)
 			}
 			return
 		}
-		err = Respond(w, out)
+		err = respond(w, out)
 		if err != nil {
 			cfg.ErrorHook(err)
 		}
