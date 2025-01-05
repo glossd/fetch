@@ -10,7 +10,7 @@
 
 
 ## Installing
-This is a zero-dependency package. It requires Go version 1.21 or above.
+This is a zero-dependency package. It requires Go version 1.21 or above. Stable version is out!
 ```shell
 go get github.com/glossd/fetch
 ```

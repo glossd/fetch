@@ -271,7 +271,8 @@ func (b B) IsNil() bool                      { return false }
 
 type nilStruct struct{}
 
-// Nil represents any not found or null values. It is pointer which value is always nil.
+// Nil represents any not found or null values. It is also used for syntax errors.
+// Nil is pointer which value is always nil.
 // However, when returned from any method, it doesn't equal nil, because
 // a Go interface is not nil when it has a type.
 // It exists to prevent nil pointer dereference when retrieving Elem value.
