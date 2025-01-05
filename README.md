@@ -311,12 +311,15 @@ http.ListenAndServe(":8080", nil)
 $ curl localhost:8080/pets/update -d '{"name":"Lola"}'
 {"name":"Lola 3000"}
 ```
-If you have empty request or response body or you want to ignore them, use  `fetch.Empty`:
+#### Ignoring request or response
+If you have an empty request or response body or you want to ignore them, use  `fetch.Empty`:
 ```go
 http.HandleFunc("/default-pet", fetch.ToHandlerFunc(func(_ fetch.Empty) (Pet, error) {
     return Pet{Name: "Teddy"}, nil
 }))
 ```
+Alternatively, you can use `fetch.ToHandlerFuncEmptyIn` and `fetch.ToHandlerFuncEmptyOut` functions.  
+#### Wrappers
 If you need to access http request attributes wrap the input with `fetch.Request`:
 ```go
 type Pet struct {
@@ -330,7 +333,7 @@ http.HandleFunc("/pets", fetch.ToHandlerFunc(func(req fetch.Request[Pet]) (*fetc
     return nil, nil
 }))
 ```
-If you have go1.23 and above you can access the wildcards as well.
+If you have `go1.23` and above you can access the wildcards as well.
 ```go
 http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in fetch.Request[fetch.Empty]) (*fetch.Empty, error) {
     fmt.Println("id from url:", in.PathValues["id"])

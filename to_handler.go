@@ -49,6 +49,12 @@ func (cfg HandlerConfig) respondError(w http.ResponseWriter, err error) {
 // In type as a request body and Out type as a response body.
 type ApplyFunc[In any, Out any] func(in In) (Out, error)
 
+// ConsumeFunc serves as ApplyFunc ignoring HTTP response
+type ConsumeFunc[In any] func(in In) error
+
+// SupplyFunc serves as ApplyFunc ignoring HTTP request
+type SupplyFunc[Out any] func() (Out, error)
+
 /*
 ToHandlerFunc converts ApplyFunc into http.HandlerFunc,
 which can be used later in http.ServeMux#HandleFunc.
@@ -108,6 +114,19 @@ func ToHandlerFunc[In any, Out any](apply ApplyFunc[In, Out]) http.HandlerFunc {
 			cfg.ErrorHook(err)
 		}
 	}
+}
+
+func ToHandlerFuncEmptyOut[In any](consume ConsumeFunc[In]) http.HandlerFunc {
+	return ToHandlerFunc[In, Empty](func(in In) (Empty, error) {
+		err := consume(in)
+		return Empty{}, err
+	})
+}
+
+func ToHandlerFuncEmptyIn[Out any](supply SupplyFunc[Out]) http.HandlerFunc {
+	return ToHandlerFunc[Empty, Out](func(_ Empty) (Out, error) {
+		return supply()
+	})
 }
 
 func readAndParseBody(r *http.Request, in any) error {

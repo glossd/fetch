@@ -16,7 +16,7 @@ func TestToHandlerFunc_EmptyIn(t *testing.T) {
 	assert(t, err, nil)
 	f(mw, r)
 	assert(t, mw.status, 200)
-	assert(t, string(mw.body), `{"name":"Lola"}`)
+	assert(t, mw.body, `{"name":"Lola"}`)
 }
 
 func TestToHandlerFunc_EmptyOut(t *testing.T) {
@@ -61,11 +61,9 @@ func TestToHandlerFunc_J(t *testing.T) {
 		return M{"status": "ok"}, nil
 	})
 	mw := newMockWriter()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/j", f)
 	r, err := http.NewRequest("POST", "/j", bytes.NewBuffer([]byte(`{"name":"Lola"}`)))
 	assert(t, err, nil)
-	mux.ServeHTTP(mw, r)
+	f.ServeHTTP(mw, r)
 	assert(t, mw.status, 200)
 	assert(t, string(mw.body), `{"status":"ok"}`)
 }
@@ -78,12 +76,10 @@ func TestToHandlerFunc_Header(t *testing.T) {
 		return Empty{}, nil
 	})
 	mw := newMockWriter()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/pets", f)
 	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{}`)))
 	r.Header.Set("Content", "mycontent")
 	assert(t, err, nil)
-	mux.ServeHTTP(mw, r)
+	f.ServeHTTP(mw, r)
 	assert(t, mw.status, 200)
 }
 
@@ -95,11 +91,9 @@ func TestToHandlerFunc_UrlParameter(t *testing.T) {
 		return Empty{}, nil
 	})
 	mw := newMockWriter()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/pets", f)
 	r, err := http.NewRequest("POST", "/pets?name=Lola", bytes.NewBuffer([]byte(``)))
 	assert(t, err, nil)
-	mux.ServeHTTP(mw, r)
+	f.ServeHTTP(mw, r)
 	assert(t, mw.status, 200)
 }
 
@@ -112,11 +106,9 @@ func TestToHandlerFunc_ParseErrors(t *testing.T) {
 			return Empty{}, nil
 		})
 		mw := newMockWriter()
-		mux := http.NewServeMux()
-		mux.HandleFunc("/pets", f)
 		r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(``)))
 		assert(t, err, nil)
-		mux.ServeHTTP(mw, r)
+		f.ServeHTTP(mw, r)
 		if mw.status != 400 || mw.body != `{"error":"parse request body: body is empty"}` {
 			t.Errorf("Wrong writer: %+v", mw)
 		}
@@ -129,11 +121,9 @@ func TestToHandlerFunc_Context(t *testing.T) {
 		return Empty{}, nil
 	})
 	mw := newMockWriter()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/pets", f)
 	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{"name":"Lola"}`)))
 	assert(t, err, nil)
-	mux.ServeHTTP(mw, r)
+	f.ServeHTTP(mw, r)
 	assert(t, mw.status, 200)
 }
 
@@ -142,11 +132,9 @@ func TestToHandlerFunc_ErrorStatus(t *testing.T) {
 		return nil, &Error{Status: 403}
 	})
 	mw := newMockWriter()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/pets", f)
 	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{"name":"Lola"}`)))
 	assert(t, err, nil)
-	mux.ServeHTTP(mw, r)
+	f.ServeHTTP(mw, r)
 	assert(t, mw.status, 403)
 }
 
@@ -158,11 +146,9 @@ func TestToHandlerFunc_Response(t *testing.T) {
 		return Response[*Pet]{Status: 201, Body: &Pet{Name: "Lola"}}, nil
 	})
 	mw := newMockWriter()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/pets", f)
 	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(``)))
 	assert(t, err, nil)
-	mux.ServeHTTP(mw, r)
+	f.ServeHTTP(mw, r)
 	if mw.status != 201 || string(mw.body) != `{"name":"Lola"}` {
 		t.Errorf("wrong writer: %+v", mw)
 	}
@@ -183,11 +169,9 @@ func TestToHandlerFunc_Middleware(t *testing.T) {
 		return Empty{}, nil
 	})
 	mw := newMockWriter()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/pets", f)
 	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{}`)))
 	assert(t, err, nil)
-	mux.ServeHTTP(mw, r)
+	f.ServeHTTP(mw, r)
 	assert(t, mw.status, 422)
 }
 
@@ -213,5 +197,38 @@ func TestToHandlerFunc_ExtractPathValues_GoLess23(t *testing.T) {
 		if len(extractPathValues(&http.Request{})) != 0 {
 			t.Errorf("expect zero map")
 		}
+	}
+}
+
+func TestToHandlerFuncEmptyIn(t *testing.T) {
+	type Pet struct {
+		Name string
+	}
+	f := ToHandlerFuncEmptyIn(func() (Response[*Pet], error) {
+		return Response[*Pet]{Status: 201, Body: &Pet{Name: "Lola"}}, nil
+	})
+	mw := newMockWriter()
+	f.ServeHTTP(mw, nil)
+	if mw.status != 201 || string(mw.body) != `{"name":"Lola"}` {
+		t.Errorf("wrong writer: %+v", mw)
+	}
+}
+
+func TestToHandlerFuncEmptyOut(t *testing.T) {
+	type Pet struct {
+		Name string
+	}
+	f := ToHandlerFuncEmptyOut(func(in Request[Pet]) error {
+		if in.Body.Name != "Lola" {
+			t.Fatalf("expected body %+v", in.Body)
+		}
+		return nil
+	})
+	mw := newMockWriter()
+	r, err := http.NewRequest("POST", "/pets", bytes.NewBuffer([]byte(`{"name":"Lola"}`)))
+	assert(t, err, nil)
+	f.ServeHTTP(mw, r)
+	if mw.status != 200 || string(mw.body) != `` {
+		t.Errorf("wrong writer: %+v", mw)
 	}
 }
