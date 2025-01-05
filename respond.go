@@ -12,13 +12,13 @@ const defaultRespondErrorFormat = `{"error":"%s"}`
 var respondErrorFormat = defaultRespondErrorFormat
 var isRespondErrorFormatJSON = true
 
-// SetRespondErrorFormat is a global setter, configuring how respond sends the errors.
+// SetHandlerErrorFormat is a global setter, configuring how respond sends the errors.
 // format argument must contain only one %s verb which would be the error message.
 // E.g.
 // fetch.SetDefaultErrorRespondFormat(`{"msg":"%s"}`)
 // fetch.SetDefaultErrorRespondFormat("%s") - just plain error text
 // fetch.SetDefaultErrorRespondFormat(`{"error":{"message":"%s"}}`)
-func SetRespondErrorFormat(format string) {
+func SetHandlerErrorFormat(format string) {
 	spl := strings.Split(format, "%s")
 	if len(spl) < 2 {
 		panic("RespondErrorFormat does not have '%s'")
@@ -31,7 +31,7 @@ func SetRespondErrorFormat(format string) {
 	respondErrorFormat = format
 }
 
-type RespondConfig struct {
+type respondConfig struct {
 	// HTTP response status. Defaults to 200.
 	Status int
 	// Additional HTTP response headers.
@@ -43,8 +43,8 @@ type RespondConfig struct {
 // respond tries to marshal the body and send HTTP response.
 // The HTTP response is sent even if an error occurs.
 // It should be used for the standard HTTP handlers.
-func respond(w http.ResponseWriter, body any, config ...RespondConfig) error {
-	var cfg RespondConfig
+func respond(w http.ResponseWriter, body any, config ...respondConfig) error {
+	var cfg respondConfig
 	if len(config) > 0 {
 		cfg = config[0]
 	}
@@ -67,12 +67,12 @@ func respond(w http.ResponseWriter, body any, config ...RespondConfig) error {
 	}
 	var err error
 	if !isValidHTTPStatus(cfg.Status) {
-		err := fmt.Errorf("RespondConfig.Status is invalid")
+		err := fmt.Errorf("respondConfig.Status is invalid")
 		_ = doRespond(w, 500, fmt.Sprintf(respondErrorFormat, err), isRespondErrorFormatJSON, cfg)
 		return err
 	}
 	if !isValidHTTPStatus(cfg.ErrorStatus) {
-		err := fmt.Errorf("RespondConfig.ErrorStatus is invalid")
+		err := fmt.Errorf("respondConfig.ErrorStatus is invalid")
 		_ = doRespond(w, 500, fmt.Sprintf(respondErrorFormat, err), isRespondErrorFormatJSON, cfg)
 		return err
 	}
@@ -105,7 +105,7 @@ func respond(w http.ResponseWriter, body any, config ...RespondConfig) error {
 	return doRespond(w, cfg.Status, bodyStr, !isString, cfg)
 }
 
-func doRespond(w http.ResponseWriter, status int, bodyStr string, isJSON bool, cfg RespondConfig) error {
+func doRespond(w http.ResponseWriter, status int, bodyStr string, isJSON bool, cfg respondConfig) error {
 	w.WriteHeader(status)
 	for k, v := range cfg.Headers {
 		w.Header().Set(k, v)
@@ -122,8 +122,8 @@ func doRespond(w http.ResponseWriter, status int, bodyStr string, isJSON bool, c
 // respondError sends HTTP response in the error format of respond.
 // It should be used when your handler experiences an error
 // before marshalling and responding with fetch.respond.
-func respondError(w http.ResponseWriter, status int, errToRespond error, config ...RespondConfig) error {
-	var cfg RespondConfig
+func respondError(w http.ResponseWriter, status int, errToRespond error, config ...respondConfig) error {
+	var cfg respondConfig
 	if len(config) > 0 {
 		cfg = config[0]
 	}

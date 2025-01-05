@@ -18,8 +18,8 @@ var defaultHandlerConfig = HandlerConfig{
 	},
 }
 
-// SetDefaultHandlerConfig sets HandlerConfig globally to be applied for every ToHandlerFunc.
-func SetDefaultHandlerConfig(hc HandlerConfig) {
+// SetHandlerConfig sets HandlerConfig globally to be applied for every ToHandlerFunc.
+func SetHandlerConfig(hc HandlerConfig) {
 	if hc.ErrorHook == nil {
 		hc.ErrorHook = defaultHandlerConfig.ErrorHook
 	}

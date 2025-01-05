@@ -69,7 +69,7 @@ func TestRespond_InvalidJSON(t *testing.T) {
 
 func TestRespond_InvalidStatus(t *testing.T) {
 	mw := newMockWriter()
-	err := respond(mw, "hello", RespondConfig{Status: 51})
+	err := respond(mw, "hello", respondConfig{Status: 51})
 	assertNotNil(t, err)
 	assert(t, mw.status, 500)
 	assert(t, mw.Header().Get("Content-Type"), "application/json")
@@ -78,34 +78,34 @@ func TestRespond_InvalidStatus(t *testing.T) {
 
 func TestSetRespondErrorFormat(t *testing.T) {
 	defer func() {
-		SetRespondErrorFormat(defaultRespondErrorFormat)
+		SetHandlerErrorFormat(defaultRespondErrorFormat)
 	}()
 
-	SetRespondErrorFormat("%s")
+	SetHandlerErrorFormat("%s")
 	mw := newMockWriter()
-	respond(mw, "hello", RespondConfig{Status: 51})
+	respond(mw, "hello", respondConfig{Status: 51})
 	assert(t, mw.header.Get("Content-Type"), "text/plain")
-	assert(t, mw.body, "RespondConfig.Status is invalid")
+	assert(t, mw.body, "respondConfig.Status is invalid")
 }
 
 func TestSetRespondErrorFormat_InvalidFormats(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		defer func() {
-			SetRespondErrorFormat(defaultRespondErrorFormat)
+			SetHandlerErrorFormat(defaultRespondErrorFormat)
 			if r := recover(); r != nil {
 				assert(t, fmt.Sprintf("%s", r), "RespondErrorFormat does not have '%s'")
 			}
 		}()
-		SetRespondErrorFormat("")
+		SetHandlerErrorFormat("")
 	})
 	t.Run(`double %s`, func(t *testing.T) {
 		defer func() {
-			SetRespondErrorFormat(defaultRespondErrorFormat)
+			SetHandlerErrorFormat(defaultRespondErrorFormat)
 			if r := recover(); r != nil {
 				assert(t, fmt.Sprintf("%s", r), "RespondErrorFormat has more than one '%s'")
 			}
 		}()
-		SetRespondErrorFormat(`{"%s":"%s"}`)
+		SetHandlerErrorFormat(`{"%s":"%s"}`)
 	})
 }
 
