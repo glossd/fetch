@@ -35,11 +35,6 @@ func Get[T any](url string, config ...Config) (T, error) {
 	return Do[T](url, config...)
 }
 
-// GetJ is a wrapper for Get[fetch.J]
-func GetJ(url string, config ...Config) (J, error) {
-	return Get[J](url, config...)
-}
-
 func Post[T any](url string, body any, config ...Config) (T, error) {
 	return requestWithBody[T](url, http.MethodPost, body, config...)
 }

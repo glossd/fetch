@@ -19,28 +19,30 @@ import (
 // | fetch.B   | bool            | boolean                             |
 // | fetch.Nil | (nil) *struct{} | null, undefined, anything not found |
 type J interface {
-	// Q parses jq-like patterns and returns according to the path value.
-	// E.g.
-	//{
-	//  "name": "Jason",
-	//  "category": {
-	//    "name":"dogs"
-	//  }
-	//  "tags": [{"name":"briard"}]
-	//}
-	//
-	// Whole json:  fmt.Println(j) or fmt.Println(j.Q("."))
-	// Retrieve name: j.Q(".name")
-	// Retrieve category name: j.Q(".category.name")
-	// Retrieve first tag's name: j.Q(".tags[0].name")
-	// If the value wasn't found, instead of nil value it will return Nil.
-	// if the pattern syntax is invalid, it returns JQError.
+	/*
+		Q parses jq-like patterns and returns according to the path value.
+		If the value wasn't found or syntax is incorrect, Q will return Nil.
+		Examples:
+
+		j := fetch.Parse(`{
+		  "name": "Jason",
+		  "category": {
+		    "name":"dogs"
+		  }
+		  "tags": [{"name":"briard"}]
+		}`)
+
+		Print json: fmt.Println(j)
+		Retrieve name: j.Q(".name")
+		Retrieve category name: j.Q(".category.name")
+		Retrieve first tag's name: j.Q(".tags[0].name")
+	*/
 	Q(pattern string) J
 
 	// String returns JSON formatted string.
 	String() string
 
-	// Raw converts the value to its definition and returns it.
+	// Elem converts J to its definition and returns it.
 	// Type-Definitions:
 	// M -> map[string]any
 	// A -> []any
@@ -48,19 +50,19 @@ type J interface {
 	// S -> string
 	// B -> bool
 	// Nil -> nil
-	Raw() any
+	Elem() any
 
-	// AsObject is a convenient type assertion if the underlying value holds a map[string]any.
+	// AsObject is a convenient type assertion if J is a map[string]any.
 	AsObject() (map[string]any, bool)
-	// AsArray is a convenient type assertion if the underlying value holds a slice of type []any.
+	// AsArray is a convenient type assertion if J is a slice of type []any.
 	AsArray() ([]any, bool)
-	// AsNumber is a convenient type assertion if the underlying value holds a float64.
+	// AsNumber is a convenient type assertion if J is a float64.
 	AsNumber() (float64, bool)
-	// AsString is a convenient type assertion if the underlying value holds a string.
+	// AsString is a convenient type assertion if J is a string.
 	AsString() (string, bool)
-	// AsBoolean is a convenient type assertion if the underlying value holds a bool.
+	// AsBoolean is a convenient type assertion if J is a bool.
 	AsBoolean() (bool, bool)
-	// IsNil check if the underlying value is fetch.Nil
+	// IsNil check if J is fetch.Nil
 	IsNil() bool
 }
 
@@ -93,7 +95,7 @@ func (m M) String() string {
 	return marshalJ(m)
 }
 
-func (m M) Raw() any {
+func (m M) Elem() any {
 	return map[string]any(m)
 }
 
@@ -121,12 +123,14 @@ func (a A) Q(pattern string) J {
 	}
 	closeBracket := strings.Index(pattern, "]")
 	if closeBracket == -1 {
-		return jqerr("expected ] for array index")
+		// expected ] for array index
+		return jnil
 	}
 	indexStr := pattern[1:closeBracket]
 	index, err := strconv.Atoi(indexStr)
 	if err != nil {
-		return jqerr("expected a number for array index, got: '%s'", indexStr)
+		// expected a number for array index
+		return jnil
 	}
 	if index < 0 || index >= len(a) {
 		// index out of range
@@ -140,7 +144,8 @@ func (a A) Q(pattern string) J {
 	}
 	i, sep := nextSep(remaining)
 	if i != 0 {
-		return jqerr("expected . or [, got: '%s'", beforeSep(remaining))
+		// expected . or [
+		return jnil
 	}
 
 	return parseValue(v, remaining, sep)
@@ -150,7 +155,7 @@ func (a A) String() string {
 	return marshalJ(a)
 }
 
-func (a A) Raw() any {
+func (a A) Elem() any {
 	return []any(a)
 }
 
@@ -197,7 +202,7 @@ func (f F) String() string {
 	return strconv.FormatFloat(float64(f), 'f', -1, 64)
 }
 
-func (f F) Raw() any {
+func (f F) Elem() any {
 	return float64(f)
 }
 
@@ -225,7 +230,7 @@ func (s S) String() string {
 	return string(s)
 }
 
-func (s S) Raw() any {
+func (s S) Elem() any {
 	return string(s)
 }
 
@@ -253,7 +258,7 @@ func (b B) String() string {
 	return strconv.FormatBool(bool(b))
 }
 
-func (b B) Raw() any {
+func (b B) Elem() any {
 	return bool(b)
 }
 
@@ -266,11 +271,11 @@ func (b B) IsNil() bool                      { return false }
 
 type nilStruct struct{}
 
-// Nil represents any not found or null values. The pointer's value is always nil.
+// Nil represents any not found or null values. It is pointer which value is always nil.
 // However, when returned from any method, it doesn't equal nil, because
 // a Go interface is not nil when it has a type.
-// It exists to prevent nil pointer dereference when retrieving Raw value.
-// It can be the root in J tree, because null alone is a valid JSON.
+// It exists to prevent nil pointer dereference when retrieving Elem value.
+// It can be the root of J tree, because null alone is a valid JSON.
 type Nil = *nilStruct
 
 // the single instance of Nil.
@@ -284,7 +289,7 @@ func (n Nil) String() string {
 	return "nil"
 }
 
-func (n Nil) Raw() any {
+func (n Nil) Elem() any {
 	return nil
 }
 

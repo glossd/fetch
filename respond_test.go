@@ -36,7 +36,7 @@ func (mw *mockWriter) Write(b []byte) (int, error) {
 
 func TestRespond_String(t *testing.T) {
 	mw := newMockWriter()
-	err := Respond(mw, "hello")
+	err := respond(mw, "hello")
 	assert(t, err, nil)
 	assert(t, mw.status, 200)
 	assert(t, mw.Header().Get("Content-Type"), "text/plain")
@@ -48,7 +48,7 @@ func TestRespond_Struct(t *testing.T) {
 	type TestStruct struct {
 		Id string
 	}
-	err := Respond(mw, &TestStruct{Id: "my-id"})
+	err := respond(mw, &TestStruct{Id: "my-id"})
 	assert(t, err, nil)
 	assert(t, mw.status, 200)
 	assert(t, mw.Header().Get("Content-Type"), "application/json")
@@ -60,7 +60,7 @@ func TestRespond_InvalidJSON(t *testing.T) {
 	type TestStruct struct {
 		MyChan chan string
 	}
-	err := Respond(mw, &TestStruct{})
+	err := respond(mw, &TestStruct{})
 	assertNotNil(t, err)
 	assert(t, mw.status, 500)
 	assert(t, mw.Header().Get("Content-Type"), "application/json")
@@ -69,7 +69,7 @@ func TestRespond_InvalidJSON(t *testing.T) {
 
 func TestRespond_InvalidStatus(t *testing.T) {
 	mw := newMockWriter()
-	err := Respond(mw, "hello", RespondConfig{Status: 51})
+	err := respond(mw, "hello", RespondConfig{Status: 51})
 	assertNotNil(t, err)
 	assert(t, mw.status, 500)
 	assert(t, mw.Header().Get("Content-Type"), "application/json")
@@ -83,7 +83,7 @@ func TestSetRespondErrorFormat(t *testing.T) {
 
 	SetRespondErrorFormat("%s")
 	mw := newMockWriter()
-	Respond(mw, "hello", RespondConfig{Status: 51})
+	respond(mw, "hello", RespondConfig{Status: 51})
 	assert(t, mw.header.Get("Content-Type"), "text/plain")
 	assert(t, mw.body, "RespondConfig.Status is invalid")
 }
@@ -111,7 +111,7 @@ func TestSetRespondErrorFormat_InvalidFormats(t *testing.T) {
 
 func TestRespondResponseEmpty(t *testing.T) {
 	mw := newMockWriter()
-	err := Respond(mw, Response[Empty]{Status: 204})
+	err := respond(mw, Response[Empty]{Status: 204})
 	assert(t, err, nil)
 	if mw.status != 204 || len(mw.body) > 0 {
 		t.Errorf("wrong writer: %+v", mw)
@@ -123,7 +123,7 @@ func TestRespondResponse(t *testing.T) {
 		Name string
 	}
 	mw := newMockWriter()
-	err := Respond(mw, Response[Pet]{Status: 201, Body: Pet{Name: "Lola"}})
+	err := respond(mw, Response[Pet]{Status: 201, Body: Pet{Name: "Lola"}})
 	assert(t, err, nil)
 	if mw.status != 201 || mw.body != `{"name":"Lola"}` {
 		t.Errorf("wrong writer: %+v, %s", mw, mw.body)
@@ -132,7 +132,7 @@ func TestRespondResponse(t *testing.T) {
 
 func TestRespondError(t *testing.T) {
 	mw := newMockWriter()
-	err := RespondError(mw, 400, fmt.Errorf("wrong"))
+	err := respondError(mw, 400, fmt.Errorf("wrong"))
 	assert(t, err, nil)
 	assert(t, mw.status, 400)
 	assert(t, mw.Header().Get("Content-Type"), "application/json")

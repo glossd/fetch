@@ -41,6 +41,11 @@ func TestJ_Q(t *testing.T) {
 		{In: `[1, 2]`, P: ".[3]", E: nil},
 		{In: `{"tags":[{"id":12}]}`, P: ".tags.id", E: nil},
 		{In: `{"category":{"name":"dog"}}`, P: ".category[0]", E: nil},
+		{In: `[1, 2, 3]`, P: ".[1", E: nil},
+		{In: `[1, 2, 3]`, P: ".]1", E: nil},
+		{In: `[1, 2, 3]`, P: ".[]", E: nil},
+		{In: `[1, 2, 3]`, P: ".[hello]", E: nil},
+		{In: `[1, 2, 3]`, P: ".[0]name", E: nil},
 	}
 	for i, c := range cases {
 		j, err := Unmarshal[J](c.In)
@@ -54,37 +59,9 @@ func TestJ_Q(t *testing.T) {
 		//	fmt.Print()
 		//}
 
-		got := j.Q(c.P).Raw()
+		got := j.Q(c.P).Elem()
 		if got != c.E {
 			t.Errorf("case #%d: wrong value, expected=%v, got=%v", i, c.E, got)
-		}
-	}
-
-	errorCases := []testCase{
-		{In: `[1, 2, 3]`, P: ".[1", E: "expected ] for array index"},
-		{In: `[1, 2, 3]`, P: ".[hello]", E: "expected a number for array index, got: 'hello'"},
-		{In: `[1, 2, 3]`, P: ".[0]name", E: "expected . or [, got: 'name'"},
-	}
-
-	for i, c := range errorCases {
-		j, err := Unmarshal[J](c.In)
-		if err != nil {
-			t.Errorf("Unmarshal error: %s", err)
-			continue
-		}
-
-		got := j.Q(c.P)
-		errStr, ok := c.E.(string)
-		if !ok {
-			panic("E should be string")
-		}
-		jqErr, ok := got.(*JQError)
-		if !ok {
-			t.Errorf("error case #%d: expected error, got=%v", i, got)
-			continue
-		}
-		if jqErr.s != errStr {
-			t.Errorf("error case #%d: wrong value, expected=%v, got=%v", i, errStr, jqErr.s)
 		}
 	}
 }
@@ -133,13 +110,13 @@ func TestJ_Nil(t *testing.T) {
 	if !j.Q("id").IsNil() {
 		t.Errorf("expected J.IsNil to be true")
 	}
-	if j.Q(".id").Raw() != nil {
+	if j.Q(".id").Elem() != nil {
 		t.Errorf("expected id to be nil")
 	}
 	if j.Q(".id").String() != "nil" {
 		t.Errorf("expected id to print nil")
 	}
-	if j.Q(".id").Q(".yaid").Raw() != nil {
+	if j.Q(".id").Q(".yaid").Elem() != nil {
 		t.Errorf("expected id to be nil")
 	}
 }

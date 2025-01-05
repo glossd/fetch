@@ -15,12 +15,12 @@ import (
 //	return s
 //}
 
-// StringifySafe tries to fix possible errors during marshalling and then calls Marshal.
-func StringifySafe(v any) (string, error) {
-	//todo skip unsupported types e.g. channel fields
-	// I can't rely on Go's encoding/json to escape unsupported fields.
-	return Marshal(v)
-}
+//// StringifySafe tries to fix possible errors during marshalling and then calls Marshal.
+//func StringifySafe(v any) (string, error) {
+//	// skip unsupported types e.g. channel fields
+//	// I can't rely on Go's encoding/json to escape unsupported fields.
+//	return Marshal(v)
+//}
 
 /*
 Marshal calls the patched json.Marshal function.

@@ -16,15 +16,11 @@ func Parse(s string) J {
 	return j
 }
 
-// UnmarshalJ sends J.String() to Unmarshal.
+// UnmarshalJ unmarshalls J into the generic value.
 func UnmarshalJ[T any](j J) (T, error) {
 	if isJNil(j) {
 		var t T
 		return t, fmt.Errorf("cannot unmarshal nil J")
-	}
-	if IsJQError(j) {
-		var t T
-		return t, fmt.Errorf("cannot unmarshal JQerror")
 	}
 	return Unmarshal[T](j.String())
 }
