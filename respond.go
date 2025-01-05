@@ -12,12 +12,13 @@ const defaultRespondErrorFormat = `{"error":"%s"}`
 var respondErrorFormat = defaultRespondErrorFormat
 var isRespondErrorFormatJSON = true
 
-// SetHandlerErrorFormat is a global setter, configuring how respond sends the errors.
+// SetHandlerErrorFormat is a global setter configuring how ToHandlerFunc converts errors returned from ApplyFunc.
 // format argument must contain only one %s verb which would be the error message.
-// E.g.
-// fetch.SetDefaultErrorRespondFormat(`{"msg":"%s"}`)
-// fetch.SetDefaultErrorRespondFormat("%s") - just plain error text
-// fetch.SetDefaultErrorRespondFormat(`{"error":{"message":"%s"}}`)
+// Defaults to {"error":"%s"}
+// Examples:
+// fetch.SetHandlerErrorFormat(`{"msg":"%s"}`)
+// fetch.SetHandlerErrorFormat("%s") - just plain error text
+// fetch.SetHandlerErrorFormat(`{"error":{"message":"%s"}}`)
 func SetHandlerErrorFormat(format string) {
 	spl := strings.Split(format, "%s")
 	if len(spl) < 2 {
