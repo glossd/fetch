@@ -32,6 +32,19 @@ func TestToHandlerFunc_EmptyOut(t *testing.T) {
 	assert(t, mw.body, ``)
 }
 
+
+func TestToHandlerFunc_RequestEmpty(t *testing.T) {
+	f := ToHandlerFunc(func(in RequestEmpty) (J, error) {
+		return M{"name": "Lola"}, nil
+	})
+	mw := newMockWriter()
+	r, err := http.NewRequest("", "", bytes.NewBuffer(nil))
+	assert(t, err, nil)
+	f(mw, r)
+	assert(t, mw.status, 200)
+	assert(t, mw.body, `{"name":"Lola"}`)
+}
+
 // This test should fail to compile on go1.21 and successfully run on go1.22.
 // Don't forget to update go.mod to 1.22 before running.
 //func TestToHandlerFunc_MultiplePathValue(t *testing.T) {

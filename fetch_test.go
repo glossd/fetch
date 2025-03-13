@@ -114,6 +114,17 @@ func TestDo_ResponseEmpty(t *testing.T) {
 	if err == nil || err.(*Error).Body != "Bad Request" {
 		t.Errorf("Even with ResponseEmpty error should read the body")
 	}
+
+	resEm, err := Do[ResponseEmpty]("key.value")
+	if err != nil {
+		t.Error(err)
+	}
+	if resEm.Status != 200 {
+		t.Errorf("response status isn't 200")
+	}
+	if resEm.Headers["Content-type"] != "application/json" {
+		t.Errorf("wrong headers")
+	}
 }
 
 func TestDo_Error(t *testing.T) {

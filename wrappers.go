@@ -98,6 +98,10 @@ func (r Request[T]) WithHeader(name, value string) Request[T] {
 // Can be used with the wrappers Response and Request or to fit the signature of ApplyFunc.
 type Empty struct{}
 
+
+type ResponseEmpty = Response[Empty]
+type RequestEmpty = Request[Empty]
+
 func isResponseWrapper(v any) bool {
 	if v == nil {
 		return false
