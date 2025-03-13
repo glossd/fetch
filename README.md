@@ -108,9 +108,9 @@ if resp.Status == 200 {
     fmt.Println("Response headers", resp.Headers)
 }
 ```
-If you don't need the HTTP body you can use `fetch.Empty` or `fetch.Response[fetch.Empty]` to access http attributes
+If you don't need the HTTP body you can use `fetch.Empty`. Or `fetch.ResponseEmpty` to access http attributes
 ```go
-res, err := fetch.Delete[fetch.Response[fetch.Empty]]("https://petstore.swagger.io/v2/pet/10")
+res, err := fetch.Delete[fetch.ResponseEmpty]("https://petstore.swagger.io/v2/pet/10")
 if err != nil {
     panic(err)
 }
@@ -335,7 +335,7 @@ http.HandleFunc("/pets", fetch.ToHandlerFunc(func(req fetch.Request[Pet]) (*fetc
 ```
 If you have `go1.23` and above you can access the wildcards as well.
 ```go
-http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in fetch.Request[fetch.Empty]) (*fetch.Empty, error) {
+http.HandleFunc("GET /pets/{id}", fetch.ToHandlerFunc(func(in fetch.RequestEmpty) (*fetch.Empty, error) {
     fmt.Println("id from url:", in.PathValues["id"])
     return nil, nil
 }))
